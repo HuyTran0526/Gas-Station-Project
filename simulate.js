@@ -5,7 +5,7 @@
 //   node simulate.js danger    -> Giả lập rò rỉ khí gas nguy hiểm (850 PPM - kích hoạt còi, quạt, ngắt van)
 //   node simulate.js safe      -> Giả lập môi trường an toàn bình thường (350 PPM)
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000/api/esp/update';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://gas-station-project.onrender.com/api/esp/update';
 const mode = process.argv[2] || 'auto';
 
 async function sendData(ppm) {

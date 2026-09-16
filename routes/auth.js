@@ -342,6 +342,24 @@ router.put('/change-password', auth, async (req, res) => {
     res.status(200).json({ message: 'Đổi mật khẩu thành công.' });
   } catch (err) {
     console.error('Lỗi đổi mật khẩu trực tiếp:', err);
+// @route   POST /api/auth/fcm-token
+// @desc    Lưu Token thiết bị nhận thông báo đẩy Firebase FCM
+// @access  Private
+router.post('/fcm-token', auth, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(400).json({ message: 'Thiếu trường fcmToken!' });
+    }
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { fcmTokens: fcmToken }
+    });
+
+    console.log(`📱 Đã đăng ký FCM Token cho tài khoản ${req.user.id}`);
+    res.status(200).json({ status: 'success', message: 'Đã lưu FCM Token thành công!' });
+  } catch (err) {
+    console.error('Lỗi lưu FCM Token:', err);
     res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
   }
 });

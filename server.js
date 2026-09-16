@@ -10,6 +10,7 @@ const User = require('./models/User');
 const auth = require('./middleware/auth');
 const authRouter = require('./routes/auth');
 const { sendWarningEmail } = require('./services/emailService');
+const { sendGasAlertFCM } = require('./services/fcmService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -67,6 +68,22 @@ async function sendWarningToAllUsers(ppm) {
     }
   } catch (err) {
     console.error('❌ Lỗi khi truy vấn danh sách người dùng để gửi email:', err);
+  }
+}
+
+// Hàm phụ trợ bắn thông báo đẩy Google FCM tới tất cả thiết bị đã cài app
+async function sendFCMToAllUsers(ppm) {
+  try {
+    const users = await User.find({}, 'fcmTokens');
+    const allTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
+    if (allTokens.length > 0) {
+      console.log(`📡 Đang gửi FCM thông báo đẩy tới ${allTokens.length} token thiết bị...`);
+      await sendGasAlertFCM(allTokens, ppm);
+    } else {
+      console.log('⚠️ Chưa có thiết bị nào đăng ký token FCM trong database.');
+    }
+  } catch (err) {
+    console.error('❌ Lỗi khi truy vấn danh sách token FCM:', err);
   }
 }
 
@@ -160,6 +177,11 @@ app.post('/api/esp/update', async (req, res) => {
       // Gửi email cảnh báo khẩn cấp đồng loạt (không chặn luồng API chính)
       sendWarningToAllUsers(calculatedPpm).catch(err => {
         console.error('Lỗi bất đồng bộ khi gửi email:', err);
+      });
+
+      // Bắn thông báo đẩy Google FCM tới tất cả điện thoại (kể cả khi tắt app)
+      sendFCMToAllUsers(calculatedPpm).catch(err => {
+        console.error('Lỗi bất đồng bộ khi gửi FCM:', err);
       });
     } 
     // Ép buộc thiết bị tắt hoàn toàn khi an toàn (Dưới 600) - Edge Trigger
