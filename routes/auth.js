@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+const DeviceToken = require('../models/DeviceToken');
 const auth = require('../middleware/auth');
 const { sendResetPasswordOtpEmail } = require('../services/emailService');
 
@@ -342,21 +343,54 @@ router.put('/change-password', auth, async (req, res) => {
     res.status(200).json({ message: 'Đổi mật khẩu thành công.' });
   } catch (err) {
     console.error('Lỗi đổi mật khẩu trực tiếp:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+  }
+});
+
 // @route   POST /api/auth/fcm-token
-// @desc    Lưu Token thiết bị nhận thông báo đẩy Firebase FCM
-// @access  Private
-router.post('/fcm-token', auth, async (req, res) => {
+// @desc    Lưu Token thiết bị nhận thông báo đẩy Firebase FCM (Hỗ trợ cả người dùng đã đăng nhập và chưa đăng nhập)
+// @access  Public / Optional Auth
+router.post('/fcm-token', async (req, res) => {
   try {
-    const { fcmToken } = req.body;
+    const { fcmToken, platform } = req.body;
     if (!fcmToken) {
       return res.status(400).json({ message: 'Thiếu trường fcmToken!' });
     }
 
-    await User.findByIdAndUpdate(req.user.id, {
-      $addToSet: { fcmTokens: fcmToken }
-    });
+    let userId = null;
+    const authHeader = req.header('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.user?.id || decoded.id;
+      } catch (e) {
+        // Token không hợp lệ thì vẫn lưu token thiết bị dưới dạng ẩn danh
+      }
+    }
 
-    console.log(`📱 Đã đăng ký FCM Token cho tài khoản ${req.user.id}`);
+    // 1. Lưu vào bảng DeviceToken độc lập
+    await DeviceToken.findOneAndUpdate(
+      { token: fcmToken },
+      {
+        token: fcmToken,
+        userId: userId,
+        platform: platform || 'android',
+        updatedAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    // 2. Nếu có userId, gán vào User model
+    if (userId) {
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { fcmTokens: fcmToken }
+      });
+      console.log(`📱 Đã đăng ký FCM Token cho tài khoản ${userId}`);
+    } else {
+      console.log(`📱 Đã đăng ký FCM Token thiết bị ẩn danh: ${fcmToken.substring(0, 15)}...`);
+    }
+
     res.status(200).json({ status: 'success', message: 'Đã lưu FCM Token thành công!' });
   } catch (err) {
     console.error('Lỗi lưu FCM Token:', err);

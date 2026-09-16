@@ -7,6 +7,7 @@ const cors = require('cors');
 const DeviceState = require('./models/DeviceState');
 const GasLog = require('./models/GasLog');
 const User = require('./models/User');
+const DeviceToken = require('./models/DeviceToken');
 const auth = require('./middleware/auth');
 const authRouter = require('./routes/auth');
 const { sendWarningEmail } = require('./services/emailService');
@@ -74,8 +75,14 @@ async function sendWarningToAllUsers(ppm) {
 // Hàm phụ trợ bắn thông báo đẩy Google FCM tới tất cả thiết bị đã cài app
 async function sendFCMToAllUsers(ppm) {
   try {
-    const users = await User.find({}, 'fcmTokens');
-    const allTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
+    const [users, deviceTokens] = await Promise.all([
+      User.find({}, 'fcmTokens'),
+      DeviceToken.find({}, 'token')
+    ]);
+    const userTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
+    const directTokens = deviceTokens.map(d => d.token).filter(Boolean);
+    const allTokens = [...new Set([...userTokens, ...directTokens])];
+
     if (allTokens.length > 0) {
       console.log(`📡 Đang gửi FCM thông báo đẩy tới ${allTokens.length} token thiết bị...`);
       await sendGasAlertFCM(allTokens, ppm);
@@ -86,6 +93,44 @@ async function sendFCMToAllUsers(ppm) {
     console.error('❌ Lỗi khi truy vấn danh sách token FCM:', err);
   }
 }
+
+// @route GET /api/fcm/status
+// @desc Kiểm tra tình trạng kết nối FCM và số thiết bị nhận tin
+app.get('/api/fcm/status', async (req, res) => {
+  try {
+    const { initFirebase } = require('./services/fcmService');
+    const isFirebaseReady = initFirebase();
+    const [users, deviceTokens] = await Promise.all([
+      User.find({}, 'email fcmTokens'),
+      DeviceToken.find({}, 'token platform updatedAt')
+    ]);
+    const userTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
+    const directTokens = deviceTokens.map(d => d.token).filter(Boolean);
+    const allTokens = [...new Set([...userTokens, ...directTokens])];
+
+    res.json({
+      firebaseReady: isFirebaseReady,
+      serviceAccountConfigured: !!(process.env.FIREBASE_SERVICE_ACCOUNT || require('fs').existsSync(require('path').join(__dirname, 'firebase-service-account.json'))),
+      totalUniqueTokens: allTokens.length,
+      deviceTokensCount: deviceTokens.length,
+      usersWithTokens: users.filter(u => u.fcmTokens && u.fcmTokens.length > 0).length,
+      tokensSample: allTokens.slice(0, 3).map(t => t.substring(0, 15) + '...')
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// @route POST /api/fcm/test
+// @desc Bắn 1 thông báo thử nghiệm tới tất cả thiết bị
+app.post('/api/fcm/test', async (req, res) => {
+  try {
+    await sendFCMToAllUsers(999);
+    res.json({ status: 'success', message: 'Đã phát lệnh test thông báo đẩy FCM' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 
