@@ -1,53 +1,79 @@
-// Script giả lập cảm biến khí Gas ESP32 gửi dữ liệu về Server (Hỗ trợ đa thiết bị / đa phòng)
+// Script giả lập cảm biến khí Gas ESP32 gửi dữ liệu về Server Cloud
 // Cú pháp: node simulate.js [chế_độ] [mã_thiết_bị] [tên_phòng]
+//
 // Ví dụ:
-//   node simulate.js danger DEV_101 "Phòng 101" -> Giả lập rò gas phòng 101 (850 PPM)
-//   node simulate.js danger DEV_102 "Phòng 102" -> Giả lập rò gas phòng 102 (850 PPM)
-//   node simulate.js safe DEV_101               -> Trả về an toàn cho phòng 101 (350 PPM)
-//   node simulate.js auto DEV_101               -> Tự động gửi dữ liệu ngẫu nhiên mỗi 2 giây
+//   node simulate.js danger             -> Kích hoạt nguy hiểm cho TẤT CẢ các phòng (DEV_101, DEV_102, DEFAULT_DEV)
+//   node simulate.js danger DEV_101     -> Kích hoạt nguy hiểm RIÊNG cho Phòng 101
+//   node simulate.js safe               -> Đặt lại an toàn cho TẤT CẢ các phòng
+//   node simulate.js safe DEV_101       -> Đặt lại an toàn RIÊNG cho Phòng 101
+//   node simulate.js auto               -> Tự động gửi dữ liệu cảm biến ngẫu nhiên
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://gas-station-project.onrender.com/api/esp/update';
-const mode = process.argv[2] || 'auto';
-const deviceId = (process.argv[3] || 'DEFAULT_DEV').trim().toUpperCase();
-const deviceName = process.argv[4] || (deviceId === 'DEFAULT_DEV' ? 'Trạm Gas Chính' : `Phòng ${deviceId}`);
+const mode = (process.argv[2] || 'auto').toLowerCase();
+const devArg = process.argv[3] ? process.argv[3].trim().toUpperCase() : null;
+const nameArg = process.argv[4] ? process.argv[4].trim() : null;
 
-async function sendData(ppm) {
+// Danh sách các phòng mặc định khi không chỉ định phòng
+const DEFAULT_ROOMS = [
+  { id: 'DEV_101', name: 'Phòng 101' },
+  { id: 'DEV_102', name: 'Phòng 102' },
+  { id: 'DEFAULT_DEV', name: 'Trạm Gas Chính' }
+];
+
+async function sendData(devId, devName, ppm) {
   try {
     const res = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        deviceId: deviceId,
-        deviceName: deviceName,
+        deviceId: devId,
+        deviceName: devName,
         ppm: Math.round(ppm)
       })
     });
     const data = await res.json();
     const time = new Date().toLocaleTimeString('vi-VN');
-    console.log(`[${time}] 📡 [${deviceId} - ${data.deviceName || deviceName}] PPM: ${ppm} | Trạng thái: ${data.isDangerMode ? '🚨 NGUY HIỂM' : '🟢 BÌNH THƯỜNG'} | Van: ${data.isOpen ? 'Mở' : 'Khóa'} | Quạt: ${data.isOn ? 'Bật' : 'Tắt'}`);
+    console.log(`[${time}] 📡 [${devId} - ${data.deviceName || devName}] PPM: ${ppm} | ${data.isDangerMode ? '🚨 NGUY HIỂM' : '🟢 AN TOÀN'} | Van: ${data.isOpen ? 'Mở' : 'Khóa'} | Quạt: ${data.isOn ? 'Bật' : 'Tắt'}`);
+    return data;
   } catch (err) {
-    console.error(`❌ Lỗi gửi dữ liệu giả lập [${deviceId}]:`, err.message);
+    console.error(`❌ Lỗi gửi dữ liệu [${devId}]:`, err.message);
   }
 }
 
-if (mode === 'danger') {
-  console.log(`🚨 BẮT ĐẦU GIẢ LẬP RÒ RỈ GAS NGUY HIỂM TẠI [${deviceId} - ${deviceName}] (850 PPM)...`);
-  sendData(850);
-} else if (mode === 'safe') {
-  console.log(`🟢 ĐẶT LẠI TRẠNG THÁI AN TOÀN CHO [${deviceId} - ${deviceName}] (350 PPM)...`);
-  sendData(350);
-} else {
-  console.log(`🔄 BẮT ĐẦU CHẠY GIẢ LẬP TỰ ĐỘNG CHO [${deviceId} - ${deviceName}] (Mỗi 2 giây gửi 1 lần)...`);
-  console.log('💡 Nhấn Ctrl + C để dừng giả lập.\n');
+async function run() {
+  const targetRooms = devArg && devArg !== 'ALL'
+    ? [{ id: devArg, name: nameArg || (devArg === 'DEFAULT_DEV' ? 'Trạm Gas Chính' : `Phòng ${devArg}`) }]
+    : DEFAULT_ROOMS;
 
-  let currentPpm = 380;
-  setInterval(() => {
-    // Biến thiên nhẹ ngẫu nhiên +/- 15 PPM
-    const delta = (Math.random() * 30) - 15;
-    currentPpm = Math.max(300, Math.min(550, currentPpm + delta));
-    sendData(currentPpm);
-  }, 2000);
+  if (mode === 'danger') {
+    console.log(`🚨 ĐANG KÍCH HOẠT NGUY HIỂM (850 PPM) TỚI: ${targetRooms.map(r => r.name + ' [' + r.id + ']').join(', ')}...`);
+    for (const r of targetRooms) {
+      await sendData(r.id, r.name, 850);
+    }
+    console.log('\n✅ Đã gửi tín hiệu nguy hiểm thành công! Kiểm tra còi hú và chuông trên App/Dashboard.');
+  } else if (mode === 'safe') {
+    console.log(`🟢 ĐANG ĐẶT LẠI TRẠNG THÁI AN TOÀN (350 PPM) TỚI: ${targetRooms.map(r => r.name + ' [' + r.id + ']').join(', ')}...`);
+    for (const r of targetRooms) {
+      await sendData(r.id, r.name, 350);
+    }
+    console.log('\n✅ Đã đặt lại trạng thái an toàn thành công! Còi báo động đã tắt.');
+  } else {
+    console.log(`🔄 BẮT ĐẦU CHẠY GIẢ LẬP TỰ ĐỘNG (Gửi định kỳ mỗi 2 giây)...`);
+    console.log(`📡 Phòng đang giám sát: ${targetRooms.map(r => r.name + ' [' + r.id + ']').join(', ')}`);
+    console.log('💡 Nhấn phím Ctrl + C để dừng giả lập bất cứ lúc nào.\n');
 
-  // Gửi ngay điểm đầu tiên
-  sendData(currentPpm);
+    let currentPpm = 380;
+    const tick = async () => {
+      const delta = (Math.random() * 30) - 15;
+      currentPpm = Math.max(300, Math.min(550, currentPpm + delta));
+      for (const r of targetRooms) {
+        await sendData(r.id, r.name, currentPpm);
+      }
+    };
+
+    await tick();
+    setInterval(tick, 2000);
+  }
 }
+
+run();
