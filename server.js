@@ -56,41 +56,94 @@ app.get('/', (req, res) => {
   res.send('<h2>✅ Máy chủ SafeFlame Backend đang chạy trực tuyến!</h2><p>Hệ thống API đã sẵn sàng nhận tín hiệu.</p>');
 });
 
-// Hàm phụ trợ gửi email khẩn cấp cho tất cả các tài khoản chủ trọ & người thuê
-async function sendWarningToAllUsers(ppm) {
+// Hàm phụ trợ gửi email khẩn cấp theo từng thiết bị (Chỉ gửi tới người thuê phòng đó + chủ trọ)
+async function sendWarningToDevice(deviceId, ppm, deviceLabel) {
   try {
-    const users = await User.find({}, 'email');
+    const cleanId = String(deviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const users = await User.find({
+      $or: [
+        { assignedDeviceId: cleanId },
+        { assignedDevices: cleanId },
+        { role: 'landlord' }
+      ]
+    }, 'email');
+
     const emails = users.map(u => u.email).filter(Boolean);
     if (emails.length > 0) {
-      console.log(`📡 Đang gửi email cảnh báo tới danh sách: ${emails.join(', ')}`);
+      console.log(`📡 [${cleanId}] Gửi email cảnh báo tới ${emails.length} tài khoản liên quan: ${emails.join(', ')}`);
       await sendWarningEmail(emails, ppm);
     } else {
-      console.log('⚠️ Không tìm thấy email người dùng nào trong database để gửi cảnh báo.');
+      console.log(`⚠️ Không tìm thấy email người dùng nào được gán với thiết bị [${cleanId}].`);
     }
   } catch (err) {
-    console.error('❌ Lỗi khi truy vấn danh sách người dùng để gửi email:', err);
+    console.error(`❌ Lỗi gửi email cho thiết bị [${deviceId}]:`, err);
   }
 }
 
-// Hàm phụ trợ bắn thông báo đẩy Google FCM tới tất cả thiết bị đã cài app
-async function sendFCMToAllUsers(ppm) {
+// Hàm phụ trợ bắn thông báo đẩy Google FCM theo từng thiết bị
+async function sendFCMToDevice(deviceId, ppm, deviceLabel) {
   try {
-    const [users, deviceTokens] = await Promise.all([
-      User.find({}, 'fcmTokens'),
-      DeviceToken.find({}, 'token')
-    ]);
-    const userTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
-    const directTokens = deviceTokens.map(d => d.token).filter(Boolean);
-    const allTokens = [...new Set([...userTokens, ...directTokens])];
+    const cleanId = String(deviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const label = deviceLabel || cleanId;
 
-    if (allTokens.length > 0) {
-      console.log(`📡 Đang gửi FCM thông báo đẩy tới ${allTokens.length} token thiết bị...`);
-      await sendGasAlertFCM(allTokens, ppm);
-    } else {
-      console.log('⚠️ Chưa có thiết bị nào đăng ký token FCM trong database.');
+    // Tìm người dùng thuộc phòng này + chủ trọ
+    const users = await User.find({
+      $or: [
+        { assignedDeviceId: cleanId },
+        { assignedDevices: cleanId },
+        { role: 'landlord' }
+      ]
+    }, 'fcmTokens role');
+
+    // Tìm thêm deviceTokens đăng ký trực tiếp mã deviceId này
+    const directDeviceTokens = await DeviceToken.find({ deviceId: cleanId }, 'token');
+    const directTokensList = directDeviceTokens.map(d => d.token).filter(Boolean);
+
+    const tenantTokens = [];
+    const landlordTokens = [];
+
+    users.forEach(u => {
+      const tokens = (u.fcmTokens || []).filter(Boolean);
+      if (u.role === 'landlord') {
+        landlordTokens.push(...tokens);
+      } else {
+        tenantTokens.push(...tokens);
+      }
+    });
+
+    directTokensList.forEach(t => {
+      if (!tenantTokens.includes(t) && !landlordTokens.includes(t)) {
+        tenantTokens.push(t);
+      }
+    });
+
+    // 1. Gửi cho người thuê phòng
+    if (tenantTokens.length > 0) {
+      console.log(`📡 [${cleanId}] Đang gửi FCM tới ${tenantTokens.length} thiết bị người thuê phòng...`);
+      await sendGasAlertFCM(tenantTokens, ppm, {
+        deviceId: cleanId,
+        deviceName: label,
+        title: `🚨 BÁO ĐỘNG ĐỎ: RÒ RỈ GAS [${label.toUpperCase()}]!`,
+        body: `Nồng độ khí gas nguy hiểm: ${ppm} PPM tại phòng của bạn! Van gas đã tự động khóa. Hãy sơ tán ngay!`
+      });
+    }
+
+    // 2. Gửi cho chủ trọ quản lý (nếu có)
+    if (landlordTokens.length > 0) {
+      console.log(`📡 [${cleanId}] Đang gửi FCM tới ${landlordTokens.length} thiết bị Chủ trọ...`);
+      await sendGasAlertFCM(landlordTokens, ppm, {
+        deviceId: cleanId,
+        deviceName: label,
+        title: `🚨 [QUẢN LÝ] BÁO ĐỘNG RÒ RỈ GAS TẠI ${label.toUpperCase()}!`,
+        body: `Phát hiện rò rỉ gas ${ppm} PPM tại [${label}]! Hệ thống đã tự khóa van và bật quạt hút.`
+      });
+    }
+
+    if (tenantTokens.length === 0 && landlordTokens.length === 0) {
+      console.log(`⚠️ Không tìm thấy token thiết bị nào được gán với mã [${cleanId}].`);
     }
   } catch (err) {
-    console.error('❌ Lỗi khi truy vấn danh sách token FCM:', err);
+    console.error(`❌ Lỗi khi gửi FCM cho thiết bị [${deviceId}]:`, err);
   }
 }
 
@@ -101,8 +154,8 @@ app.get('/api/fcm/status', async (req, res) => {
     const { initFirebase } = require('./services/fcmService');
     const isFirebaseReady = initFirebase();
     const [users, deviceTokens] = await Promise.all([
-      User.find({}, 'email fcmTokens'),
-      DeviceToken.find({}, 'token platform updatedAt')
+      User.find({}, 'email fcmTokens assignedDeviceId role'),
+      DeviceToken.find({}, 'token deviceId platform updatedAt')
     ]);
     const userTokens = users.flatMap(u => u.fcmTokens || []).filter(Boolean);
     const directTokens = deviceTokens.map(d => d.token).filter(Boolean);
@@ -114,7 +167,8 @@ app.get('/api/fcm/status', async (req, res) => {
       totalUniqueTokens: allTokens.length,
       deviceTokensCount: deviceTokens.length,
       usersWithTokens: users.filter(u => u.fcmTokens && u.fcmTokens.length > 0).length,
-      tokensSample: allTokens.slice(0, 3).map(t => t.substring(0, 15) + '...')
+      tokensSample: allTokens.slice(0, 3).map(t => t.substring(0, 15) + '...'),
+      devicesDistribution: deviceTokens.map(d => ({ deviceId: d.deviceId, platform: d.platform }))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -122,11 +176,12 @@ app.get('/api/fcm/status', async (req, res) => {
 });
 
 // @route POST /api/fcm/test
-// @desc Bắn 1 thông báo thử nghiệm tới tất cả thiết bị
+// @desc Bắn 1 thông báo thử nghiệm tới thiết bị chỉ định hoặc mặc định
 app.post('/api/fcm/test', async (req, res) => {
   try {
-    await sendFCMToAllUsers(999);
-    res.json({ status: 'success', message: 'Đã phát lệnh test thông báo đẩy FCM' });
+    const targetDev = (req.body.deviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    await sendFCMToDevice(targetDev, 999, 'Phòng Test ' + targetDev);
+    res.json({ status: 'success', message: `Đã phát lệnh test thông báo đẩy FCM tới thiết bị [${targetDev}]` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -141,6 +196,9 @@ async function initializeDeviceState() {
     const count = await DeviceState.countDocuments();
     if (!count) {
       const defaultState = new DeviceState({
+        deviceId: 'DEFAULT_DEV',
+        deviceName: 'Phòng Mặc Định (DEV_01)',
+        location: 'Khu vực bếp',
         ppm: 350,
         isOpen: true, 
         isOn: false,
@@ -155,28 +213,70 @@ async function initializeDeviceState() {
   }
 }
 
+// @route GET /api/devices
+// @desc Lấy danh sách tất cả các thiết bị / phòng trong hệ thống
+app.get('/api/devices', auth, async (req, res) => {
+  try {
+    const devices = await DeviceState.find().sort({ updatedAt: -1 });
+    const now = new Date();
+    const result = devices.map(d => ({
+      id: d._id,
+      deviceId: d.deviceId,
+      deviceName: d.deviceName || d.deviceId,
+      location: d.location || '',
+      ppm: d.ppm,
+      isOpen: d.isOpen,
+      isOn: d.isOn,
+      isBuzzerMuted: d.isBuzzerMuted,
+      isDangerMode: d.isDangerMode,
+      isOnline: d.updatedAt ? (now - new Date(d.updatedAt)) < 15000 : false,
+      updatedAt: d.updatedAt
+    }));
+    res.status(200).json({ status: 'success', devices: result });
+  } catch (err) {
+    console.error('Lỗi GET /api/devices:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+  }
+});
 
-
-
+// @route GET /api/status
+// @desc Lấy trạng thái cảm biến theo deviceId (mặc định lấy theo tài khoản hoặc DEFAULT_DEV)
 app.get('/api/status', auth, async (req, res) => {
   try {
-    
-    const state = await DeviceState.findOne();
-    
-    
-    const recentLogs = await GasLog.find()
+    const targetDeviceId = (req.query.deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+
+    let state = await DeviceState.findOne({ deviceId: targetDeviceId });
+    if (!state) {
+      // Tự động khởi tạo trạng thái an toàn nếu thiết bị mới kết nối
+      state = new DeviceState({
+        deviceId: targetDeviceId,
+        deviceName: 'Phòng ' + targetDeviceId,
+        location: 'Khu vực bếp',
+        ppm: 350,
+        isOpen: true,
+        isOn: false,
+        isBuzzerMuted: true,
+        isDangerMode: false
+      });
+      await state.save();
+    }
+
+    const recentLogs = await GasLog.find({ deviceId: targetDeviceId })
       .sort({ timestamp: -1 })
-      .limit(5);
+      .limit(6);
 
     const now = new Date();
     const isEspOnline = state && state.updatedAt ? (now - new Date(state.updatedAt)) < 15000 : false;
 
     res.status(200).json({
-      ppm: state ? state.ppm : 350,
-      isOpen: state ? state.isOpen : true,
-      isOn: state ? state.isOn : false,
-      isBuzzerMuted: state ? state.isBuzzerMuted : false,
-      isDangerMode: state ? state.isDangerMode : false,
+      deviceId: state.deviceId,
+      deviceName: state.deviceName || state.deviceId,
+      location: state.location || '',
+      ppm: state.ppm,
+      isOpen: state.isOpen,
+      isOn: state.isOn,
+      isBuzzerMuted: state.isBuzzerMuted,
+      isDangerMode: state.isDangerMode,
       isEspOnline: isEspOnline,
       recentLogs: recentLogs
     });
@@ -186,64 +286,70 @@ app.get('/api/status', auth, async (req, res) => {
   }
 });
 
-
+// @route POST /api/esp/update
+// @desc ESP32 phần cứng gửi nồng độ gas lên kèm deviceId
 app.post('/api/esp/update', async (req, res) => {
   try {
-    const { adcValue, ppm } = req.body;
+    const { adcValue, ppm, deviceId, deviceName, location } = req.body;
+    const targetDeviceId = (deviceId || 'DEFAULT_DEV').trim().toUpperCase();
     let calculatedPpm;
 
     if (ppm !== undefined && ppm !== null) {
       calculatedPpm = Math.round(Number(ppm));
     } else if (adcValue !== undefined && adcValue !== null) {
-      
-      
       calculatedPpm = Math.round(350 + (Number(adcValue) / 4095) * (10000 - 350));
     } else {
       return res.status(400).json({ message: 'Thiếu trường dữ liệu adcValue hoặc ppm!' });
     }
 
-    
-    await GasLog.create({ ppm: calculatedPpm });
+    // Ghi log lịch sử theo từng deviceId
+    await GasLog.create({ deviceId: targetDeviceId, ppm: calculatedPpm });
 
-    
-    let state = await DeviceState.findOne();
+    let state = await DeviceState.findOne({ deviceId: targetDeviceId });
     if (!state) {
-      state = new DeviceState();
+      state = new DeviceState({
+        deviceId: targetDeviceId,
+        deviceName: deviceName || ('Phòng ' + targetDeviceId),
+        location: location || 'Khu vực bếp'
+      });
+    } else {
+      if (deviceName && state.deviceName !== deviceName) state.deviceName = deviceName;
+      if (location && state.location !== location) state.location = location;
     }
 
-    // Xử lý Edge Trigger: Khi bắt đầu nguy hiểm
+    // Xử lý Edge Trigger: Khi bắt đầu nguy hiểm (>= 600 PPM)
     if (calculatedPpm >= 600 && !state.isDangerMode) {
       state.isDangerMode = true;
-      state.isOpen = false; 
-      state.isOn = true;    
-      state.isBuzzerMuted = false; // false = Còi KÊU
-      console.log(`🚨 NGUY HIỂM: Gas vượt ngưỡng (${calculatedPpm} PPM). Đã kích hoạt báo động khẩn cấp!`);
-      
-      // Gửi email cảnh báo khẩn cấp đồng loạt (không chặn luồng API chính)
-      sendWarningToAllUsers(calculatedPpm).catch(err => {
-        console.error('Lỗi bất đồng bộ khi gửi email:', err);
+      state.isOpen = false; // Tự động khóa van
+      state.isOn = true;    // Tự động bật quạt
+      state.isBuzzerMuted = false; // Còi kêu
+      console.log(`🚨 [${targetDeviceId} - ${state.deviceName}] NGUY HIỂM: Gas ${calculatedPpm} PPM! Kích hoạt báo động.`);
+
+      // Gửi email khẩn cấp cho người dùng phòng này + chủ trọ
+      sendWarningToDevice(targetDeviceId, calculatedPpm, state.deviceName).catch(err => {
+        console.error('Lỗi gửi email cảnh báo:', err);
       });
 
-      // Bắn thông báo đẩy Google FCM tới tất cả điện thoại (kể cả khi tắt app)
-      sendFCMToAllUsers(calculatedPpm).catch(err => {
-        console.error('Lỗi bất đồng bộ khi gửi FCM:', err);
+      // Bắn thông báo đẩy Google FCM tới đúng thiết bị người thuê phòng đó + chủ trọ
+      sendFCMToDevice(targetDeviceId, calculatedPpm, state.deviceName).catch(err => {
+        console.error('Lỗi gửi FCM cảnh báo:', err);
       });
     } 
-    // Ép buộc thiết bị tắt hoàn toàn khi an toàn (Dưới 600) - Edge Trigger
+    // Ép buộc thiết bị tắt hoàn toàn khi an toàn (Dưới 600 PPM) - Edge Trigger
     else if (calculatedPpm < 600 && state.isDangerMode) {
       state.isDangerMode = false;
-      // state.isOpen = true; // KHÔNG TỰ ĐỘNG MỞ VAN, GIỮ NGUYÊN TRẠNG THÁI KHÓA
       state.isOn = false;
-      state.isBuzzerMuted = true; // true = Còi TẮT
-      console.log(`🟢 AN TOÀN: Gas < 600 PPM. Đã tự động tắt quạt và còi, giữ nguyên khóa van.`);
+      state.isBuzzerMuted = true; // Còi tắt
+      console.log(`🟢 [${targetDeviceId} - ${state.deviceName}] AN TOÀN: Gas < 600 PPM. Đã tắt quạt và còi, giữ nguyên khóa van.`);
     }
 
     state.ppm = calculatedPpm;
     await state.save();
 
-    
     res.status(200).json({
       status: 'success',
+      deviceId: state.deviceId,
+      deviceName: state.deviceName,
       ppm: calculatedPpm,
       isOpen: state.isOpen,
       isOn: state.isOn,
@@ -256,16 +362,17 @@ app.post('/api/esp/update', async (req, res) => {
   }
 });
 
-
+// @route POST /api/control/valve
 app.post('/api/control/valve', auth, async (req, res) => {
   try {
-    const { isOpen } = req.body;
+    const { isOpen, deviceId } = req.body;
+    const targetDeviceId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
 
     if (isOpen === undefined) {
       return res.status(400).json({ message: 'Thiếu trường dữ liệu isOpen!' });
     }
 
-    const state = await DeviceState.findOne();
+    let state = await DeviceState.findOne({ deviceId: targetDeviceId });
     if (state) {
       state.isOpen = isOpen;
       await state.save();
@@ -273,6 +380,7 @@ app.post('/api/control/valve', auth, async (req, res) => {
 
     res.status(200).json({
       status: 'success',
+      deviceId: targetDeviceId,
       isOpen: state ? state.isOpen : isOpen
     });
   } catch (err) {
@@ -281,16 +389,17 @@ app.post('/api/control/valve', auth, async (req, res) => {
   }
 });
 
-
+// @route POST /api/control/fan
 app.post('/api/control/fan', auth, async (req, res) => {
   try {
-    const { isOn } = req.body;
+    const { isOn, deviceId } = req.body;
+    const targetDeviceId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
 
     if (isOn === undefined) {
       return res.status(400).json({ message: 'Thiếu trường dữ liệu isOn!' });
     }
 
-    const state = await DeviceState.findOne();
+    let state = await DeviceState.findOne({ deviceId: targetDeviceId });
     if (state) {
       state.isOn = isOn;
       await state.save();
@@ -298,6 +407,7 @@ app.post('/api/control/fan', auth, async (req, res) => {
 
     res.status(200).json({
       status: 'success',
+      deviceId: targetDeviceId,
       isOn: state ? state.isOn : isOn
     });
   } catch (err) {
@@ -306,15 +416,17 @@ app.post('/api/control/fan', auth, async (req, res) => {
   }
 });
 
+// @route POST /api/control/buzzer
 app.post('/api/control/buzzer', auth, async (req, res) => {
   try {
-    const { isMuted } = req.body;
+    const { isMuted, deviceId } = req.body;
+    const targetDeviceId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
 
     if (isMuted === undefined) {
       return res.status(400).json({ message: 'Thiếu trường dữ liệu isMuted!' });
     }
 
-    const state = await DeviceState.findOne();
+    let state = await DeviceState.findOne({ deviceId: targetDeviceId });
     if (state) {
       state.isBuzzerMuted = isMuted;
       await state.save();
@@ -322,6 +434,7 @@ app.post('/api/control/buzzer', auth, async (req, res) => {
 
     res.status(200).json({
       status: 'success',
+      deviceId: targetDeviceId,
       isBuzzerMuted: state ? state.isBuzzerMuted : isMuted
     });
   } catch (err) {

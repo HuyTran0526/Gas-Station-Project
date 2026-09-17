@@ -1,36 +1,43 @@
-// Script giả lập cảm biến khí Gas ESP32 gửi dữ liệu về Server
-// Chạy bằng lệnh: node simulate.js [chế_độ]
-// Các chế độ:
-//   node simulate.js           -> Tự động gửi dữ liệu ngẫu nhiên mỗi 2 giây (350 - 450 PPM)
-//   node simulate.js danger    -> Giả lập rò rỉ khí gas nguy hiểm (850 PPM - kích hoạt còi, quạt, ngắt van)
-//   node simulate.js safe      -> Giả lập môi trường an toàn bình thường (350 PPM)
+// Script giả lập cảm biến khí Gas ESP32 gửi dữ liệu về Server (Hỗ trợ đa thiết bị / đa phòng)
+// Cú pháp: node simulate.js [chế_độ] [mã_thiết_bị] [tên_phòng]
+// Ví dụ:
+//   node simulate.js danger DEV_101 "Phòng 101" -> Giả lập rò gas phòng 101 (850 PPM)
+//   node simulate.js danger DEV_102 "Phòng 102" -> Giả lập rò gas phòng 102 (850 PPM)
+//   node simulate.js safe DEV_101               -> Trả về an toàn cho phòng 101 (350 PPM)
+//   node simulate.js auto DEV_101               -> Tự động gửi dữ liệu ngẫu nhiên mỗi 2 giây
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://gas-station-project.onrender.com/api/esp/update';
 const mode = process.argv[2] || 'auto';
+const deviceId = (process.argv[3] || 'DEFAULT_DEV').trim().toUpperCase();
+const deviceName = process.argv[4] || (deviceId === 'DEFAULT_DEV' ? 'Trạm Gas Chính' : `Phòng ${deviceId}`);
 
 async function sendData(ppm) {
   try {
     const res = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ppm: Math.round(ppm) })
+      body: JSON.stringify({
+        deviceId: deviceId,
+        deviceName: deviceName,
+        ppm: Math.round(ppm)
+      })
     });
     const data = await res.json();
     const time = new Date().toLocaleTimeString('vi-VN');
-    console.log(`[${time}] 📡 Gửi PPM: ${ppm} | Trạng thái: ${data.isDangerMode ? '🚨 NGUY HIỂM' : '🟢 BÌNH THƯỜNG'} | Van: ${data.isOpen ? 'Mở' : 'Khóa'} | Quạt: ${data.isOn ? 'Bật' : 'Tắt'}`);
+    console.log(`[${time}] 📡 [${deviceId} - ${data.deviceName || deviceName}] PPM: ${ppm} | Trạng thái: ${data.isDangerMode ? '🚨 NGUY HIỂM' : '🟢 BÌNH THƯỜNG'} | Van: ${data.isOpen ? 'Mở' : 'Khóa'} | Quạt: ${data.isOn ? 'Bật' : 'Tắt'}`);
   } catch (err) {
-    console.error('❌ Lỗi gửi dữ liệu giả lập:', err.message);
+    console.error(`❌ Lỗi gửi dữ liệu giả lập [${deviceId}]:`, err.message);
   }
 }
 
 if (mode === 'danger') {
-  console.log('🚨 BẮT ĐẦU GIẢ LẬP TÌNH HUỐNG RÒ RỈ KHÍ GAS NGUY HIỂM (850 PPM)...');
+  console.log(`🚨 BẮT ĐẦU GIẢ LẬP RÒ RỈ GAS NGUY HIỂM TẠI [${deviceId} - ${deviceName}] (850 PPM)...`);
   sendData(850);
 } else if (mode === 'safe') {
-  console.log('🟢 ĐẶT LẠI TRẠNG THÁI AN TOÀN (350 PPM)...');
+  console.log(`🟢 ĐẶT LẠI TRẠNG THÁI AN TOÀN CHO [${deviceId} - ${deviceName}] (350 PPM)...`);
   sendData(350);
 } else {
-  console.log('🔄 BẮT ĐẦU CHẠY GIẢ LẬP CẢM BIẾN TỰ ĐỘNG (Mỗi 2 giây gửi 1 lần)...');
+  console.log(`🔄 BẮT ĐẦU CHẠY GIẢ LẬP TỰ ĐỘNG CHO [${deviceId} - ${deviceName}] (Mỗi 2 giây gửi 1 lần)...`);
   console.log('💡 Nhấn Ctrl + C để dừng giả lập.\n');
 
   let currentPpm = 380;

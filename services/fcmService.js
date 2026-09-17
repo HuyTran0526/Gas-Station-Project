@@ -54,8 +54,9 @@ initFirebase();
  * Gửi thông báo đẩy khẩn cấp FCM tới danh sách thiết bị
  * @param {Array<string>} tokens Danh sách FCM device token
  * @param {number} ppm Nồng độ gas đo được
+ * @param {Object} options Tùy chọn tiêu đề, tên thiết bị, mã phòng
  */
-async function sendGasAlertFCM(tokens, ppm) {
+async function sendGasAlertFCM(tokens, ppm, options = {}) {
   if (!initFirebase()) {
     console.warn('⚠️ Bỏ qua gửi FCM: Firebase chưa được khởi tạo');
     return;
@@ -70,8 +71,9 @@ async function sendGasAlertFCM(tokens, ppm) {
   const uniqueTokens = [...new Set(tokens.filter(Boolean))];
   if (uniqueTokens.length === 0) return;
 
-  const title = '🚨 BÁO ĐỘNG ĐỎ: PHÁT HIỆN RÒ RỈ GAS!';
-  const body = `Nồng độ khí gas nguy hiểm: ${ppm} PPM! Van gas đã tự động khóa. Hãy kiểm tra phòng và sơ tán ngay!`;
+  const deviceLabel = options.deviceName || options.deviceId || 'Khu Vực Bếp';
+  const title = options.title || `🚨 BÁO ĐỘNG ĐỎ: RÒ RỈ GAS [${deviceLabel}]!`;
+  const body = options.body || `Nồng độ khí gas nguy hiểm: ${ppm} PPM tại ${deviceLabel}! Van gas đã tự động khóa. Hãy sơ tán và kiểm tra ngay!`;
 
   const message = {
     notification: {
@@ -92,6 +94,8 @@ async function sendGasAlertFCM(tokens, ppm) {
     },
     data: {
       ppm: String(ppm),
+      deviceId: String(options.deviceId || 'DEFAULT_DEV'),
+      deviceName: String(deviceLabel),
       timestamp: String(Date.now()),
       type: 'GAS_LEAK_ALERT'
     },

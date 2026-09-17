@@ -27,6 +27,20 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  assignedDeviceId: {
+    type: String,
+    trim: true,
+    default: 'DEFAULT_DEV'
+  },
+  roomName: {
+    type: String,
+    trim: true,
+    default: 'Phòng của tôi'
+  },
+  assignedDevices: [{
+    type: String,
+    trim: true
+  }],
   resetPasswordOtp: {
     type: String
   },

@@ -19,6 +19,10 @@ const deviceTokenSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  deviceId: {
+    type: String,
+    default: 'DEFAULT_DEV'
+  },
   updatedAt: {
     type: Date,
     default: Date.now

@@ -17,29 +17,37 @@ const JWT_SECRET = process.env.JWT_SECRET || 'safeflame_secret_key_12345';
 // @access  Public
 router.post('/register', async (req, res) => {
   try {
-    const { fullName, email, password, role } = req.body;
+    const { fullName, email, password, role, deviceId, roomName } = req.body;
 
-    // Validate dữ liệu đầu vào cơ bản
-    if (!fullName || !email || !password || !role) {
-      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin bắt buộc!' });
+    // Kiểm tra định dạng email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Địa chỉ email không hợp lệ!' });
     }
 
-    if (!['landlord', 'tenant'].includes(role)) {
-      return res.status(400).json({ message: 'Vai trò tài khoản không hợp lệ!' });
+    // Kiểm tra độ dài mật khẩu
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự!' });
     }
 
-    // Kiểm tra trùng email
+    // Kiểm tra email đã tồn tại
     let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ message: 'Địa chỉ email này đã được sử dụng!' });
+      return res.status(400).json({ message: 'Email này đã được sử dụng!' });
     }
 
-    // Tạo user mới
+    const cleanDeviceId = deviceId ? String(deviceId).trim() : 'DEFAULT_DEV';
+    const cleanRoomName = roomName ? String(roomName).trim() : 'Phòng ' + cleanDeviceId;
+
+    // Tạo người dùng mới
     user = new User({
       fullName,
       email,
       password,
-      role
+      role: role || 'tenant',
+      assignedDeviceId: cleanDeviceId,
+      roomName: cleanRoomName,
+      assignedDevices: [cleanDeviceId]
     });
 
     // Mã hóa mật khẩu
@@ -60,7 +68,10 @@ router.post('/register', async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        phone: user.phone || ''
+        phone: user.phone || '',
+        assignedDeviceId: user.assignedDeviceId,
+        roomName: user.roomName,
+        assignedDevices: user.assignedDevices
       }
     });
 
@@ -106,7 +117,10 @@ router.post('/login', async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        phone: user.phone || ''
+        phone: user.phone || '',
+        assignedDeviceId: user.assignedDeviceId || 'DEFAULT_DEV',
+        roomName: user.roomName || 'Phòng của tôi',
+        assignedDevices: user.assignedDevices || [user.assignedDeviceId || 'DEFAULT_DEV']
       }
     });
 
@@ -123,7 +137,16 @@ router.get('/me', auth, async (req, res) => {
   try {
     res.status(200).json({
       status: 'success',
-      user: req.user
+      user: {
+        id: req.user._id,
+        fullName: req.user.fullName,
+        email: req.user.email,
+        role: req.user.role,
+        phone: req.user.phone || '',
+        assignedDeviceId: req.user.assignedDeviceId || 'DEFAULT_DEV',
+        roomName: req.user.roomName || 'Phòng của tôi',
+        assignedDevices: req.user.assignedDevices || [req.user.assignedDeviceId || 'DEFAULT_DEV']
+      }
     });
   } catch (err) {
     console.error('Lỗi lấy thông tin tài khoản:', err);
@@ -352,21 +375,34 @@ router.put('/change-password', auth, async (req, res) => {
 // @access  Public / Optional Auth
 router.post('/fcm-token', async (req, res) => {
   try {
-    const { fcmToken, platform } = req.body;
+    const { fcmToken, platform, deviceId } = req.body;
     if (!fcmToken) {
       return res.status(400).json({ message: 'Thiếu trường fcmToken!' });
     }
 
     let userId = null;
+    let targetDeviceId = deviceId ? String(deviceId).trim() : null;
+
     const authHeader = req.header('Authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        userId = decoded.user?.id || decoded.id;
+        userId = decoded.user?.id || decoded.id || decoded.userId;
       } catch (e) {
         // Token không hợp lệ thì vẫn lưu token thiết bị dưới dạng ẩn danh
       }
+    }
+
+    // Nếu chưa có targetDeviceId nhưng có userId, lấy assignedDeviceId của user
+    if (!targetDeviceId && userId) {
+      const u = await User.findById(userId, 'assignedDeviceId');
+      if (u && u.assignedDeviceId) {
+        targetDeviceId = u.assignedDeviceId;
+      }
+    }
+    if (!targetDeviceId) {
+      targetDeviceId = 'DEFAULT_DEV';
     }
 
     // 1. Lưu vào bảng DeviceToken độc lập
@@ -375,6 +411,7 @@ router.post('/fcm-token', async (req, res) => {
       {
         token: fcmToken,
         userId: userId,
+        deviceId: targetDeviceId,
         platform: platform || 'android',
         updatedAt: new Date()
       },
@@ -386,14 +423,70 @@ router.post('/fcm-token', async (req, res) => {
       await User.findByIdAndUpdate(userId, {
         $addToSet: { fcmTokens: fcmToken }
       });
-      console.log(`📱 Đã đăng ký FCM Token cho tài khoản ${userId}`);
+      console.log(`📱 Đã đăng ký FCM Token cho tài khoản ${userId} (Thiết bị: ${targetDeviceId})`);
     } else {
-      console.log(`📱 Đã đăng ký FCM Token thiết bị ẩn danh: ${fcmToken.substring(0, 15)}...`);
+      console.log(`📱 Đã đăng ký FCM Token thiết bị ẩn danh: ${fcmToken.substring(0, 15)}... (Thiết bị: ${targetDeviceId})`);
     }
 
-    res.status(200).json({ status: 'success', message: 'Đã lưu FCM Token thành công!' });
+    res.status(200).json({ status: 'success', message: 'Đã lưu FCM Token thành công!', deviceId: targetDeviceId });
   } catch (err) {
     console.error('Lỗi lưu FCM Token:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+  }
+});
+
+// @route   PUT /api/auth/assign-device
+// @desc    Liên kết hoặc thay đổi mã thiết bị phòng (Device ID) cho người dùng
+// @access  Private
+router.put('/assign-device', auth, async (req, res) => {
+  try {
+    const { deviceId, roomName } = req.body;
+    if (!deviceId) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp mã thiết bị (deviceId)!' });
+    }
+
+    const cleanDeviceId = String(deviceId).trim().toUpperCase();
+    const cleanRoomName = roomName ? String(roomName).trim() : ('Phòng ' + cleanDeviceId);
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy thông tin tài khoản!' });
+    }
+
+    user.assignedDeviceId = cleanDeviceId;
+    user.roomName = cleanRoomName;
+
+    if (!user.assignedDevices) user.assignedDevices = [];
+    if (!user.assignedDevices.includes(cleanDeviceId)) {
+      user.assignedDevices.push(cleanDeviceId);
+    }
+
+    await user.save();
+
+    // Cập nhật lại deviceId trong bảng DeviceToken của tài khoản này
+    await DeviceToken.updateMany(
+      { userId: user._id },
+      { deviceId: cleanDeviceId }
+    );
+
+    console.log(`🔗 Tài khoản ${user.email} đã chuyển sang thiết bị: ${cleanDeviceId} (${cleanRoomName})`);
+
+    res.status(200).json({
+      status: 'success',
+      message: `Đã liên kết thành công với thiết bị [${cleanDeviceId}]!`,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        phone: user.phone || '',
+        assignedDeviceId: user.assignedDeviceId,
+        roomName: user.roomName,
+        assignedDevices: user.assignedDevices
+      }
+    });
+  } catch (err) {
+    console.error('Lỗi liên kết thiết bị:', err);
     res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
   }
 });
