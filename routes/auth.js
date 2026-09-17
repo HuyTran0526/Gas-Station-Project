@@ -214,7 +214,10 @@ router.post('/google', async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        phone: user.phone || ''
+        phone: user.phone || '',
+        assignedDeviceId: user.assignedDeviceId || 'DEFAULT_DEV',
+        roomName: user.roomName || 'Phòng Mặc Định',
+        assignedDevices: user.assignedDevices || ['DEFAULT_DEV']
       }
     });
 
