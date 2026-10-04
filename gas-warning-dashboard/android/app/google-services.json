@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "962804277367",
+    "project_id": "safeflame-64dbf",
+    "storage_bucket": "safeflame-64dbf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:962804277367:android:d8864590149aa265382672",
+        "android_client_info": {
+          "package_name": "com.safeflame.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbWHzAv9LRI817fFDco5WT1jL_mf_cr2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

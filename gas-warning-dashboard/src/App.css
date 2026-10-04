@@ -1,0 +1,412 @@
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+.animate-spin-fast {
+  animation: spin-slow 0.6s linear infinite;
+}
+
+@keyframes pulse-wave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-wave {
+  animation: pulse-wave 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.08) !important;
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 16px 28px -8px rgba(14, 165, 233, 0.12);
+}
+
+/* Glowing shadow indicators */
+.shadow-neon-green {
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+}
+
+.shadow-neon-orange {
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.15);
+}
+
+.shadow-neon-red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+}
+
+.shadow-neon-sky {
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.15);
+}
+
+/* Custom Scrollbar for Light Mode */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+/* Wave grid background for Light Mode */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(14, 165, 233, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Gradient background shift animation */
+@keyframes gradient-bg {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-bg {
+  background: linear-gradient(-45deg, #f8fafc, #f1f5f9, #e0f2fe, #f1f5f9);
+  background-size: 400% 400%;
+  animation: gradient-bg 15s ease infinite;
+}
+
+.animate-gradient-danger {
+  background: linear-gradient(-45deg, #fff5f5, #ffe3e3, #ffd8d8, #ffe3e3);
+  background-size: 400% 400%;
+  animation: gradient-bg 8s ease infinite;
+}
+
+.glass-card input {
+  color: #1e293b !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(100, 116, 139, 0.6) !important; /* làm viền đậm và rõ ràng hơn */
+  border-width: 1.5px !important;
+}
+
+.glass-card input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.glass-card input:focus {
+  border-color: var(--brand-blue) !important;
+  box-shadow: 0 0 0 2.5px var(--brand-blue-glow) !important;
+  background-color: #ffffff !important;
+}
+
+/* Make icons and toggle buttons inside input fields readable against the light background */
+.glass-card .relative span.absolute svg,
+.glass-card .relative span.absolute svg path,
+.glass-card .relative span.absolute {
+  color: #475569 !important;
+  stroke: #475569 !important;
+  opacity: 1 !important;
+}
+
+.glass-card .relative button.absolute svg,
+.glass-card .relative button.absolute svg path,
+.glass-card .relative button.absolute {
+  color: #475569 !important;
+  stroke: #475569 !important;
+  opacity: 1 !important;
+}
+
+.glass-card .relative button.absolute:hover svg,
+.glass-card .relative button.absolute:hover svg path,
+.glass-card .relative button.absolute:hover {
+  color: #1e293b !important;
+  stroke: #1e293b !important;
+}
+
+/* Custom background adjustments for alert sections */
+.glass-card .bg-slate-50 {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+  border-color: rgba(226, 232, 240, 0.7) !important;
+}
+
+.glass-card .bg-slate-100 {
+  background-color: rgba(226, 232, 240, 0.6) !important;
+  border-color: rgba(203, 213, 225, 0.7) !important;
+}
+
+.glass-card .border-slate-200 {
+  border-color: rgba(226, 232, 240, 0.7) !important;
+}
+
+.glass-card .bg-emerald-50\/60 {
+  background-color: rgba(240, 253, 250, 0.8) !important;
+}
+
+.glass-card .bg-red-50\/60 {
+  background-color: rgba(254, 242, 242, 0.8) !important;
+}
+
+.glass-card .bg-sky-50 {
+  background-color: rgba(224, 242, 254, 0.8) !important;
+}
+
+.glass-card .bg-amber-50\/60 {
+  background-color: rgba(254, 243, 199, 0.8) !important;
+}
+
+/* Smooth Fade-in & Slide-up page entry transition */
+@keyframes fade-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar slide in from right */
+@keyframes sidebar-slide {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-sidebar-slide {
+  animation: sidebar-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out forwards;
+}
+
+.animate-fade-slide {
+  animation: fade-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Radar wave effect for emergencies */
+@keyframes pulse-radar {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-radar {
+  animation: pulse-radar 2s infinite;
+}
+
+/* Alert shaking animation */
+@keyframes shake-card {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.animate-shake {
+  animation: shake-card 0.6s ease-in-out infinite alternate;
+}
+
+/* Wind blow effects for active fan */
+@keyframes wind-blow {
+  0% {
+    transform: translateX(-100%) translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(100%) translateY(0);
+    opacity: 0;
+  }
+}
+
+.wind-line {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.4), transparent);
+  animation: wind-blow 1.5s linear infinite;
+  pointer-events: none;
+}
+
+/* Shimmer skeleton effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Brand Blue color overrides matching the Safe Flame logo (#3186b2) adjusted to Pastel Blue */
+:root {
+  --brand-blue: #54a0ff; /* elegant royal pastel blue */
+  --brand-blue-hover: #74b9ff; /* lighter hover variant */
+  --brand-blue-glow: rgba(84, 160, 255, 0.18);
+  
+  /* Buttons have a darker shade of this brand blue as requested */
+  --brand-blue-btn: #54a0ff;
+  --brand-blue-btn-hover: #74b9ff;
+}
+
+/* Unified all blue buttons to use the brand pastel blue gradient */
+.bg-gradient-to-r.from-sky-500.via-blue-600.to-blue-700,
+.bg-gradient-to-r.from-sky-500.to-blue-600,
+.bg-gradient-to-r.from-blue-900.to-blue-700,
+.bg-gradient-to-r.from-emerald-500.to-teal-600 {
+  background: linear-gradient(90deg, #54a0ff 0%, #48dbfb 100%) !important;
+  box-shadow: 0 4px 14px 0 rgba(84, 160, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.bg-gradient-to-r.from-sky-500.via-blue-600.to-blue-700:hover,
+.bg-gradient-to-r.from-sky-500.to-blue-600:hover,
+.bg-gradient-to-r.from-blue-900.to-blue-700:hover,
+.bg-gradient-to-r.from-emerald-500.to-teal-600:hover {
+  background: linear-gradient(90deg, #74b9ff 0%, #60a5fa 100%) !important;
+  box-shadow: 0 6px 20px 0 rgba(84, 160, 255, 0.35) !important;
+}
+
+/* Links and texts in project are unified to logo brand blue */
+.text-sky-400,
+.text-sky-300,
+.text-sky-450 {
+  color: var(--brand-blue) !important;
+}
+
+.text-sky-400:hover {
+  color: var(--brand-blue-hover) !important;
+}
+
+.text-sky-650,
+.text-sky-600,
+.text-sky-700,
+.text-blue-600,
+.text-blue-700 {
+  color: var(--brand-blue) !important;
+}
+
+.text-blue-600:hover,
+.text-blue-700:hover {
+  color: var(--brand-blue-hover) !important;
+}
+
+/* Header title gradient matching logo blue */
+.bg-gradient-to-r.from-blue-900.via-blue-800.to-sky-600 {
+  background-image: linear-gradient(to right, #1e3a8a, #2563eb, var(--brand-blue)) !important;
+}
+
+/* Borders and Rings */
+.focus\:ring-sky-500\/30:focus,
+.focus\:ring-sky-500\/40:focus,
+.focus\:ring-sky-500:focus {
+  box-shadow: 0 0 0 2px var(--brand-blue-glow) !important;
+}
+
+.border-sky-500,
+.border-sky-200 {
+  border-color: var(--brand-blue) !important;
+}
+
+.border-sky-400 {
+  border-color: var(--brand-blue-hover) !important;
+}
+
+/* Background highlights */
+.bg-sky-50,
+.bg-sky-500\/10 {
+  background-color: rgba(84, 160, 255, 0.08) !important;
+}
+
+.border-sky-500\/30 {
+  border-color: rgba(84, 160, 255, 0.25) !important;
+}
+
+/* Ambient glow */
+.bg-blue-500\/10,
+.bg-sky-500\/10,
+.bg-blue-500\/5,
+.bg-sky-500\/5 {
+  background-color: rgba(84, 160, 255, 0.06) !important;
+}
+
+.shadow-neon-sky {
+  box-shadow: 0 0 15px rgba(84, 160, 255, 0.18) !important;
+}
+
+/* Custom mapping for the chart stroke color and fill color matching the brand color */
+polyline[stroke="#3186b2"] {
+  stroke: var(--brand-blue) !important;
+}
+
+polygon[fill="url(#chartGrad)"] {
+  fill: rgba(84, 160, 255, 0.08) !important;
+}
+
+
