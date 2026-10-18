@@ -448,6 +448,17 @@ function App() {
       return
     }
 
+    // Nếu đang ở Chế độ Trải nghiệm Khách (Demo / Chưa đăng nhập)
+    if (!token) {
+      setIsValveOpen(targetState)
+      toast(targetState ? '🔓 Đã mở Van Gas (Chế độ Trải Nghiệm Mẫu). Hãy Đăng nhập để điều khiển van thật!' : '🔒 Đã đóng Van Gas (Chế độ Trải Nghiệm Mẫu). Hãy Đăng nhập để điều khiển van thật!', {
+        icon: '💡',
+        duration: 3500,
+        id: 'guest-valve-toggle'
+      })
+      return
+    }
+
     try {
       const res = await fetch(`${backendUrl}/control/valve`, {
         method: 'POST',
@@ -493,6 +504,17 @@ function App() {
       return
     }
 
+    // Nếu đang ở Chế độ Trải nghiệm Khách (Demo / Chưa đăng nhập)
+    if (!token) {
+      setIsFanOn(targetState)
+      toast(targetState ? '🌀 Đã bật Quạt Hút (Chế độ Trải Nghiệm Mẫu). Hãy Đăng nhập để điều khiển quạt thật!' : '⏸️ Đã tắt Quạt Hút (Chế độ Trải Nghiệm Mẫu). Hãy Đăng nhập để điều khiển quạt thật!', {
+        icon: '💡',
+        duration: 3500,
+        id: 'guest-fan-toggle'
+      })
+      return
+    }
+
     try {
       const res = await fetch(`${backendUrl}/control/fan`, {
         method: 'POST',
@@ -526,6 +548,17 @@ function App() {
 
     if (isSimulationRunning) {
       setIsBuzzerMuted(targetState)
+      return
+    }
+
+    // Nếu đang ở Chế độ Trải nghiệm Khách (Demo / Chưa đăng nhập)
+    if (!token) {
+      setIsBuzzerMuted(targetState)
+      toast(targetState ? '🔕 Đã tắt Còi Báo (Chế độ Trải Nghiệm Mẫu)!' : '🔔 Đã bật Còi Báo (Chế độ Trải Nghiệm Mẫu)!', {
+        icon: '💡',
+        duration: 3500,
+        id: 'guest-buzzer-toggle'
+      })
       return
     }
 
