@@ -113,6 +113,7 @@ function App() {
   const [isValveOpen, setIsValveOpen] = useState(true)
   const [isFanOn, setIsFanOn] = useState(false)
   const [isBuzzerMuted, setIsBuzzerMuted] = useState(false)
+  const [isDangerMode, setIsDangerMode] = useState(false)
 
   const isSimulationRunning = false
   const baseLeakRate = 120
@@ -361,6 +362,7 @@ function App() {
           setIsValveOpen(data.isOpen)
           setIsFanOn(data.isOn)
           setIsBuzzerMuted(data.isBuzzerMuted ?? false)
+          setIsDangerMode(data.isDangerMode !== undefined ? data.isDangerMode : (data.ppm >= 600))
           if (data.deviceName) {
             setCurrentDeviceName(data.deviceName)
           }
@@ -611,11 +613,13 @@ function App() {
 
           // Xử lý báo động có Dải trễ 100 PPM (Bật tại >= 600, Chỉ tắt khi < 500)
           if (nextPpm >= 600) {
+            setIsDangerMode(true)
             setIsValveOpen(false)
             setIsFanOn(true)
             setIsBuzzerMuted(false)
           }
           else if (nextPpm < 500 && prevPpm >= 500) {
+            setIsDangerMode(false)
             setIsFanOn(false)
             setIsBuzzerMuted(true)
           }
