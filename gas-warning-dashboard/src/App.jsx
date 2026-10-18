@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import { Capacitor } from '@capacitor/core'
 import {
@@ -29,7 +30,10 @@ import {
   Radio,
   ChevronDown,
   Check,
-  Home
+  Home,
+  Building2,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react'
 import { App as CapacitorApp } from '@capacitor/app'
 import './App.css'
@@ -37,8 +41,11 @@ import logoImg from './assets/logo.jpg'
 import Login from './components/Login'
 import Register from './components/Register'
 import SoundSettingsModal from './components/SoundSettingsModal'
+import AdminDashboard from './components/AdminDashboard'
+import LandingPage from './components/LandingPage'
 import alarmService from './services/alarmService'
 import { initFCM } from './services/fcmService'
+import { initGA4, trackGAEvent } from './services/analyticsService'
 
 const CLOUD_BACKEND_URL = 'https://gas-station-project.onrender.com/api'
 
@@ -50,7 +57,15 @@ if (typeof window !== 'undefined' && window.localStorage) {
 }
 
 function App() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || CLOUD_BACKEND_URL
+  const backendUrl = (() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1' && (/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.endsWith('.local') || hostname === 'safeflame.vn')) {
+        return `http://${hostname}:5001/api`
+      }
+    }
+    return import.meta.env.VITE_BACKEND_URL || CLOUD_BACKEND_URL
+  })()
 
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [currentUser, setCurrentUser] = useState(() => {
@@ -84,10 +99,14 @@ function App() {
     return 'Phòng Mặc Định'
   })
   const [availableDevices, setAvailableDevices] = useState([])
-  const [currentScreen, setCurrentScreen] = useState(localStorage.getItem('token') ? 'dashboard' : 'login')
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('token')) return 'dashboard'
+    return 'landing'
+  })
   const [isAppInitializing, setIsAppInitializing] = useState(!!localStorage.getItem('token'))
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSoundModalOpen, setIsSoundModalOpen] = useState(false)
+  const [isAdminView, setIsAdminView] = useState(false)
 
   const [ppm, setPpm] = useState(350)
   const [isOnline, setIsOnline] = useState(true)
@@ -121,6 +140,51 @@ function App() {
       window.removeEventListener('touchstart', unlockAudio)
     }
   }, [])
+
+  const lastTrackedQueryRef = useRef('')
+
+  // Khởi tạo GA4 & Lắng nghe nguồn truy cập UTM từ Facebook / TikTok / Trực Tiếp
+  useEffect(() => {
+    try {
+      const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID
+      if (gaId) {
+        initGA4(gaId)
+      }
+
+      const params = new URLSearchParams(window.location.search)
+      let utmSource = params.get('utm_source') || params.get('ref')
+      const currentQuery = window.location.search || 'direct'
+
+      // Nếu không có UTM và chưa từng ghi nhận session này (khách gõ link trực tiếp)
+      const isDirectVisit = !utmSource && !sessionStorage.getItem('safeflame_session_tracked') && !localStorage.getItem('token')
+      if (isDirectVisit) {
+        utmSource = 'direct'
+        sessionStorage.setItem('safeflame_session_tracked', 'true')
+      }
+
+      // Ngăn chặn React StrictMode chạy 2 lần trong môi trường Dev & chống gửi lặp cùng URL
+      if (utmSource && lastTrackedQueryRef.current !== currentQuery) {
+        lastTrackedQueryRef.current = currentQuery
+        localStorage.setItem('traffic_source', utmSource)
+        trackGAEvent('campaign_traffic', {
+          source: utmSource,
+          campaign: params.get('utm_campaign') || (utmSource === 'direct' ? 'direct_visit' : 'safeflame'),
+          medium: params.get('utm_medium') || (utmSource === 'direct' ? 'none' : 'social')
+        })
+
+        fetch(`${backendUrl}/analytics/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: utmSource,
+            path: window.location.pathname,
+            referrer: document.referrer || '',
+            device: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+          })
+        }).catch(() => {})
+      }
+    } catch (e) {}
+  }, [backendUrl])
 
   // Lắng nghe phím Back vật lý trên Android để thoát app chuẩn xác
   useEffect(() => {
@@ -186,7 +250,7 @@ function App() {
     localStorage.removeItem('selected_device_id')
     setToken('')
     setCurrentUser(null)
-    setCurrentScreen('login')
+    setCurrentScreen('landing')
     setSelectedDeviceId('DEFAULT_DEV')
     setCurrentDeviceName('Phòng Mặc Định')
   }
@@ -301,6 +365,42 @@ function App() {
             setCurrentDeviceName(data.deviceName)
           }
 
+          // Tự động đồng bộ ngay lập tức khi Chủ Trọ vừa gán hoặc đổi phòng cho người thuê
+          if (data.userAssignedDeviceId) {
+            setCurrentUser(prevUser => {
+              if (prevUser && prevUser.role === 'tenant') {
+                const isDifferentDevice = prevUser.assignedDeviceId !== data.userAssignedDeviceId
+                const isDifferentRoomName = data.userRoomName && prevUser.roomName !== data.userRoomName
+
+                if (isDifferentDevice || isDifferentRoomName) {
+                  const newDevId = data.userAssignedDeviceId
+                  const newRoomName = data.userRoomName || data.deviceName || `Phòng ${newDevId}`
+
+                  console.log(`🔄 Tự động đồng bộ phòng mới từ Chủ Trọ: [${newDevId}] ${newRoomName}`)
+                  setSelectedDeviceId(newDevId)
+                  setCurrentDeviceName(newRoomName)
+                  localStorage.setItem('selected_device_id', newDevId)
+
+                  const updatedUser = {
+                    ...prevUser,
+                    assignedDeviceId: newDevId,
+                    roomName: newRoomName
+                  }
+                  localStorage.setItem('user', JSON.stringify(updatedUser))
+
+                  toast.success(`🏢 Phòng của bạn vừa được cập nhật: ${newRoomName}!`, {
+                    id: 'room-sync-toast',
+                    icon: '🔔',
+                    duration: 4000
+                  })
+
+                  return updatedUser
+                }
+              }
+              return prevUser
+            })
+          }
+
           if (data.isEspOnline !== undefined) {
             setIsOnline(data.isEspOnline)
           } else {
@@ -334,6 +434,15 @@ function App() {
     if (!isOnline && !isSimulationRunning) return
     const targetState = !isValveOpen
 
+    // 🔒 KHÓA LIÊN ĐỘNG AN TOÀN (Safety Interlock): Chống mở van khi nồng độ gas nguy hiểm
+    if (targetState && (ppm >= 600 || isDangerMode)) {
+      toast.error('🚫 CỰC KỲ NGUY HIỂM: Nồng độ khí gas đang vượt ngưỡng an toàn (≥ 600 PPM)! Hệ thống khóa cứng van để phòng ngừa cháy nổ.', {
+        duration: 5000,
+        id: 'safety-valve-lock'
+      })
+      return
+    }
+
     if (isSimulationRunning) {
       setIsValveOpen(targetState)
       return
@@ -352,7 +461,11 @@ function App() {
         handleLogout()
         return
       }
-      if (!res.ok) throw new Error('Control valve failed')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        toast.error(errData.message || 'Không thể thực hiện thao tác trên van gas!')
+        return
+      }
       const data = await res.json()
       setIsValveOpen(data.isOpen)
       toast.success(data.isOpen ? `🔓 Đã mở Van Khóa Gas [${selectedDeviceId}]!` : `🔒 Đã đóng Van Khóa Gas [${selectedDeviceId}]!`)
@@ -365,6 +478,15 @@ function App() {
   const handleToggleFanReal = async () => {
     if (!isOnline && !isSimulationRunning) return
     const targetState = !isFanOn
+
+    // 🔒 KHÓA LIÊN ĐỘNG AN TOÀN (Safety Interlock): Không cho phép tắt quạt khi nồng độ gas nguy hiểm
+    if (!targetState && (ppm >= 600 || isDangerMode)) {
+      toast.error('🚫 NGUY HIỂM: Không thể tắt quạt hút khi nồng độ gas đang ở mức nguy hiểm! Quạt phải chạy để thông gió cưỡng bức.', {
+        duration: 5000,
+        id: 'safety-fan-lock'
+      })
+      return
+    }
 
     if (isSimulationRunning) {
       setIsFanOn(targetState)
@@ -384,7 +506,11 @@ function App() {
         handleLogout()
         return
       }
-      if (!res.ok) throw new Error('Control fan failed')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        toast.error(errData.message || 'Không thể thực hiện thao tác trên quạt hút!')
+        return
+      }
       const data = await res.json()
       setIsFanOn(data.isOn)
       toast.success(data.isOn ? `🌀 Đã bật Quạt Hút Gió [${selectedDeviceId}]!` : `⏸️ Đã tắt Quạt Hút Gió [${selectedDeviceId}]!`)
@@ -450,12 +576,13 @@ function App() {
           if (nextPpm < ambientPpm) nextPpm = ambientPpm
           if (nextPpm > 60000) nextPpm = 60000
 
+          // Xử lý báo động có Dải trễ 100 PPM (Bật tại >= 600, Chỉ tắt khi < 500)
           if (nextPpm >= 600) {
             setIsValveOpen(false)
             setIsFanOn(true)
             setIsBuzzerMuted(false)
           }
-          else if (nextPpm < 600 && prevPpm >= 600) {
+          else if (nextPpm < 500 && prevPpm >= 500) {
             setIsFanOn(false)
             setIsBuzzerMuted(true)
           }
@@ -631,9 +758,25 @@ function App() {
     )
   }
 
+  if (currentScreen === 'landing') {
+    return (
+      <LandingPage
+        onGoToLogin={() => setCurrentScreen('login')}
+        onGoToRegister={() => setCurrentScreen('register')}
+        onGoToDemo={() => setCurrentScreen('demo')}
+      />
+    )
+  }
+
   if (currentScreen === 'login') {
     return (
-      <div className="min-h-screen text-slate-900 bg-grid-pattern relative flex items-center justify-center p-4 animate-gradient-bg">
+      <div className="min-h-screen text-slate-900 bg-grid-pattern relative flex flex-col items-center justify-center p-4 animate-gradient-bg">
+        <button
+          onClick={() => setCurrentScreen('landing')}
+          className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-xs backdrop-blur-sm"
+        >
+          <span>← Quay lại Trang Giới Thiệu</span>
+        </button>
         <Login
           backendUrl={backendUrl}
           onLoginSuccess={handleLoginSuccess}
@@ -645,7 +788,13 @@ function App() {
 
   if (currentScreen === 'register') {
     return (
-      <div className="min-h-screen text-slate-900 bg-grid-pattern relative flex items-center justify-center p-4 animate-gradient-bg">
+      <div className="min-h-screen text-slate-900 bg-grid-pattern relative flex flex-col items-center justify-center p-4 animate-gradient-bg">
+        <button
+          onClick={() => setCurrentScreen('landing')}
+          className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-xs backdrop-blur-sm"
+        >
+          <span>← Quay lại Trang Giới Thiệu</span>
+        </button>
         <Register
           backendUrl={backendUrl}
           onRegisterSuccess={handleLoginSuccess}
@@ -665,6 +814,30 @@ function App() {
         <div className="absolute top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none" />
         {ppm >= 600 && isOnline && (
           <div className="absolute top-[30%] left-[20%] w-[50%] h-[40%] rounded-full bg-red-500/5 blur-[150px] pointer-events-none animate-pulse" />
+        )}
+
+        {/* Demo Mode Notice Bar */}
+        {currentScreen === 'demo' && (
+          <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white px-3 sm:px-6 py-2.5 text-xs sm:text-sm font-bold flex flex-wrap items-center justify-between gap-2 shadow-md relative z-50">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold uppercase">Demo Mode</span>
+              <span>Bạn đang trải nghiệm giao diện Bàn Giám Sát mẫu (Không yêu cầu đăng nhập).</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentScreen('landing')}
+                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                ← Về Trang Giới Thiệu
+              </button>
+              <button
+                onClick={() => setCurrentScreen('login')}
+                className="px-3 py-1 rounded-lg bg-white text-blue-700 hover:bg-blue-50 text-xs font-extrabold transition-all cursor-pointer shadow-xs"
+              >
+                Đăng Nhập Ngay
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Header chính */}
@@ -691,6 +864,36 @@ function App() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Nút Chuyển đổi Giám Sát / Quản Trị Trọ (Dành riêng cho Chủ Trọ) */}
+              {currentUser?.role === 'landlord' && (
+                <button
+                  type="button"
+                  onClick={() => setIsAdminView(prev => !prev)}
+                  className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:py-1.5 sm:px-3 rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 text-left ${
+                    isAdminView
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-blue-500/20'
+                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 text-blue-700'
+                  }`}
+                  title={isAdminView ? 'Chuyển sang Bàn Giám Sát Thiết Bị' : 'Chuyển sang Quản Trị Dãy Trọ'}
+                >
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                    isAdminView ? 'bg-white/20 text-white' : 'bg-blue-600 text-white'
+                  }`}>
+                    {isAdminView ? <Activity className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                  </div>
+                  <div className="hidden sm:flex flex-col items-start leading-none">
+                    <span className="text-[11px] font-black">
+                      {isAdminView ? 'Giám Sát Home' : 'Quản Trị Trọ'}
+                    </span>
+                    <span className={`text-[8px] font-extrabold uppercase tracking-wider mt-0.5 ${
+                      isAdminView ? 'text-blue-100' : 'text-blue-600'
+                    }`}>
+                      {isAdminView ? 'Bàn điều khiển' : 'Admin Panel'}
+                    </span>
+                  </div>
+                </button>
+              )}
+
               {/* Thông tin người dùng đăng nhập & Hồ sơ cá nhân */}
               {currentUser && (
                 <button
@@ -768,9 +971,32 @@ function App() {
 
         { }
         <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 mt-4 sm:mt-6">
-
-          {/* Banner Hồ sơ người dùng trên Dashboard */}
-          {currentUser && (
+          {isAdminView && currentUser?.role === 'landlord' ? (
+            <AdminDashboard
+              currentUser={currentUser}
+              token={token}
+              backendUrl={backendUrl}
+              onSwitchToMonitor={(devId, devName) => {
+                setSelectedDeviceId(devId)
+                setCurrentDeviceName(devName)
+                localStorage.setItem('selected_device_id', devId)
+                setIsAdminView(false)
+                toast.success(`Đang can thiệp phòng: ${devName}`)
+              }}
+              onRefreshDevices={() => {
+                if (token) {
+                  fetch(`${backendUrl}/devices`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  }).then(r => r.json()).then(d => {
+                    if (d.devices) setAvailableDevices(d.devices)
+                  }).catch(() => {})
+                }
+              }}
+            />
+          ) : (
+            <>
+              {/* Banner Hồ sơ người dùng trên Dashboard */}
+              {currentUser && (
             <div className="glass-card rounded-2xl p-3 sm:p-4 mb-4 border border-slate-200/80 bg-white/80 flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-base font-black shadow-md shadow-sky-500/20 shrink-0">
@@ -875,16 +1101,52 @@ function App() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsProfileOpen(true)}
-                      className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-700 border border-sky-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                    >
-                      <Cpu className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Đổi Phòng / Thiết Bị</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold shadow-xs">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Phòng Cố Định Của Bạn</span>
+                    </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override) */}
+          {currentUser?.role === 'landlord' && selectedDeviceId !== 'DEFAULT_DEV' && (
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs mb-4 animate-fade-in">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700 shrink-0">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-black block text-amber-900">
+                    Chế Độ Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override)
+                  </span>
+                  <span className="text-[11px] text-amber-700">
+                    Bạn đang giám sát từ xa phòng <b>{currentDeviceName} ({selectedDeviceId})</b>. Mọi thao tác khóa van, bật quạt hay ngắt còi báo giả sẽ có hiệu lực ngay lập tức.
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsAdminView(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                >
+                  Về Quản Trị Trọ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDeviceId('DEFAULT_DEV')
+                    setCurrentDeviceName('Trạm Gas Chính')
+                    localStorage.setItem('selected_device_id', 'DEFAULT_DEV')
+                    toast.success('Đã chuyển về Trạm Gas Chính')
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Về Trạm Tổng
+                </button>
               </div>
             </div>
           )}
@@ -1016,9 +1278,11 @@ function App() {
                       <Flame className={`w-6 h-6 sm:w-8 sm:h-8 ${isValveOpen && ppm > 600 ? 'animate-bounce' : ''}`} />
                     </div>
                     <div className="text-center">
-                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Van Khóa Gas</span>
-                      <span className="text-xs xs:text-sm sm:text-base font-extrabold block">
-                        {isValveOpen ? 'ĐANG MỞ' : 'ĐÃ ĐÓNG'}
+                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
+                        Van Khóa Gas {(!isValveOpen && (ppm >= 600 || isDangerMode)) ? '🔒' : ''}
+                      </span>
+                      <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${(!isValveOpen && (ppm >= 600 || isDangerMode)) ? 'text-rose-600 font-black' : ''}`}>
+                        {isValveOpen ? 'ĐANG MỞ' : (ppm >= 600 || isDangerMode) ? 'KHÓA AN TOÀN' : 'ĐÃ ĐÓNG'}
                       </span>
                     </div>
                     { }
@@ -1049,9 +1313,11 @@ function App() {
                       <Fan className={`w-6 h-6 sm:w-8 sm:h-8 ${isFanOn ? 'animate-spin-fast' : ''}`} />
                     </div>
                     <div className="text-center">
-                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Quạt Hút Gió</span>
-                      <span className="text-xs xs:text-sm sm:text-base font-extrabold block">
-                        {isFanOn ? 'ĐANG BẬT' : 'ĐANG TẮT'}
+                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
+                        Quạt Hút Gió {(isFanOn && (ppm >= 600 || isDangerMode)) ? '⚡' : ''}
+                      </span>
+                      <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${isFanOn && (ppm >= 600 || isDangerMode) ? 'text-sky-600 font-black' : ''}`}>
+                        {isFanOn ? ((ppm >= 600 || isDangerMode) ? 'THÔNG GIÓ' : 'ĐANG BẬT') : 'ĐANG TẮT'}
                       </span>
                     </div>
                     { }
@@ -1339,7 +1605,8 @@ function App() {
             </div>
           </div>
 
-
+            </>
+          )}
         </main>
 
         { }
@@ -1355,6 +1622,10 @@ function App() {
             setCurrentDeviceName={setCurrentDeviceName}
             availableDevices={availableDevices}
             onClose={() => setIsProfileOpen(false)}
+            onOpenAdmin={() => {
+              setIsProfileOpen(false)
+              setIsAdminView(true)
+            }}
           />
         )}
 
@@ -1381,7 +1652,8 @@ function ProfileModal({
   currentDeviceName,
   setCurrentDeviceName,
   availableDevices,
-  onClose
+  onClose,
+  onOpenAdmin
 }) {
   if (!currentUser) return null;
   const [fullName, setFullName] = useState(currentUser?.fullName || '')
@@ -1530,8 +1802,8 @@ function ProfileModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-[999] flex justify-end animate-fade-in text-slate-800" onClick={onClose}>
+  return typeof document !== 'undefined' ? createPortal(
+    <div className="fixed inset-0 bg-slate-900/25 backdrop-blur-[2px] z-[9999] flex justify-end animate-fade-in text-slate-800 cursor-pointer" onClick={onClose}>
       <div
         className="w-full max-w-md h-full bg-white/95 backdrop-blur-md border-l border-slate-200/60 shadow-2xl relative flex flex-col animate-sidebar-slide"
         onClick={(e) => e.stopPropagation()}
@@ -1600,8 +1872,8 @@ function ProfileModal({
             </div>
           )}
 
-          {activeTab === 'info' ? (
-            <form onSubmit={handleUpdateProfile} className="space-y-5">
+          {activeTab === 'info' && (
+            <form key="form-profile-info" onSubmit={handleUpdateProfile} className="space-y-5">
               {/* Account Details read-only */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
@@ -1653,115 +1925,92 @@ function ProfileModal({
                 )}
               </button>
             </form>
-          ) : activeTab === 'device' ? (
-            <form onSubmit={handleAssignDevice} className="space-y-4">
-              <div className="p-4 rounded-2xl bg-sky-50 border border-sky-100 text-slate-700">
-                <div className="flex items-center gap-2 text-sky-700 font-bold text-xs mb-1">
-                  <Radio className="w-4 h-4 text-sky-600" />
-                  <span>Hệ thống phân luồng báo động riêng biệt</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Khi phát hiện rò rỉ khí gas tại phòng này, hệ thống sẽ <b>chỉ hú còi và gửi thông báo khẩn cấp</b> tới người thuê của phòng và chủ trọ.
-                </p>
-              </div>
+          )}
 
-              {/* Danh sách thiết bị khả dụng để chọn nhanh */}
-              {availableDevices && availableDevices.length > 0 && (
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                    Thiết bị đang hoạt động ({availableDevices.length})
-                  </label>
-                  <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1">
-                    {availableDevices.map((dev) => (
-                      <button
-                        key={dev.deviceId}
-                        type="button"
-                        onClick={() => {
-                          setDeviceInput(dev.deviceId)
-                          setRoomNameInput(dev.deviceName || ('Phòng ' + dev.deviceId))
-                        }}
-                        className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
-                          deviceInput === dev.deviceId
-                            ? 'bg-sky-50 border-sky-400 text-sky-900 shadow-xs'
-                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Cpu className="w-4 h-4 text-sky-600" />
-                          <div>
-                            <span className="text-xs font-bold block">{dev.deviceName || dev.deviceId}</span>
-                            <span className="text-[10px] font-mono text-slate-400">ID: {dev.deviceId}</span>
-                          </div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          dev.isEspOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {dev.isEspOnline ? '🟢 Online' : '⚪ Offline'}
-                        </span>
-                      </button>
-                    ))}
+          {activeTab === 'device' && (
+            <div key="panel-profile-device" className="space-y-4">
+              {currentUser?.role === 'tenant' ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-sky-50 border border-sky-100 text-slate-700">
+                    <div className="flex items-center gap-2 text-sky-700 font-bold text-xs mb-1">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Thiết bị bảo vệ phòng của bạn</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Tài khoản Người Thuê được cố định với thiết bị được cấp. Mọi cảnh báo rò rỉ khí gas tại phòng này sẽ được gửi thông báo khẩn cấp và hú còi bảo vệ.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3.5">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Phòng Đang Ở</span>
+                      <span className="text-base font-black text-slate-800">{currentUser.roomName || 'Phòng Mặc Định'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Mã Thiết Bị ESP32 (Device ID)</span>
+                      <span className="text-sm font-mono font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100 inline-block mt-0.5">
+                        {currentUser.assignedDeviceId || 'DEFAULT_DEV'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Quyền Can Thiệp Thiết Bị</span>
+                      <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5 mt-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Có toàn quyền điều khiển Van Gas, Quạt Hút, Còi Báo tại phòng này</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-[11px] leading-relaxed text-amber-800">
+                      <b>Lưu ý dành cho người thuê:</b> Thiết bị phòng được quản lý và phân quyền trực tiếp bởi <b>Chủ Trọ</b>. Nếu bạn chuyển phòng hoặc thay đổi cảm biến, vui lòng liên hệ Chủ Trọ để được cập nhật trên hệ thống.
+                    </p>
                   </div>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-sky-50 border border-sky-100 text-slate-700">
+                    <div className="flex items-center gap-2 text-sky-700 font-bold text-xs mb-1">
+                      <Radio className="w-4 h-4 text-sky-600" />
+                      <span>Trung Tâm Quản Trị Hệ Thống Phòng & Cảm Biến</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Với tư cách <b>Chủ Trọ</b>, bạn có toàn quyền thêm phòng mới, xóa/sửa cảm biến ESP32 và phân chia phòng cho từng khách thuê tại <b>Trang Quản Trị Trọ</b>.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Tổng số phòng trọ</span>
+                      <span className="text-sm font-black text-slate-800">{availableDevices?.length || 0} phòng</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Phòng đang theo dõi</span>
+                      <span className="text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">
+                        {currentDeviceName} ({selectedDeviceId})
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      if (onOpenAdmin) onOpenAdmin()
+                    }}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    <Building2 className="w-4.5 h-4.5" />
+                    <span>Mở Trang Quản Trị Trọ (CRUD Phòng & Người Thuê)</span>
+                  </button>
+                </div>
               )}
+            </div>
+          )}
 
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                  Mã Thiết Bị (Device ID) *
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <Cpu className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={deviceInput}
-                    onChange={(e) => setDeviceInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-                    placeholder="VD: DEV_101, DEV_102, PHONG_301..."
-                    className="w-full pl-9 pr-4 py-3 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all uppercase"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1 ml-1">Mã thiết bị in trên hộp cảm biến ESP32 của phòng.</p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                  Tên Phòng / Vị trí hiển thị
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <Home className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={roomNameInput}
-                    onChange={(e) => setRoomNameInput(e.target.value.replace(/[<>]/g, ''))}
-                    placeholder="VD: Phòng 101 (Tầng 1)..."
-                    className="w-full pl-9 pr-4 py-3 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isAssigning}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-6"
-              >
-                {isAssigning ? (
-                  <>
-                    <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                    Đang liên kết...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Lưu & Liên kết thiết bị
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleChangePassword} className="space-y-4">
+          {activeTab === 'password' && (
+            <form key="form-profile-password" onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 ml-1">
                   Mật khẩu hiện tại *
@@ -1837,8 +2086,9 @@ function ProfileModal({
           )}
         </div>
       </div>
-    </div>
-  )
+    </div>,
+    document.body
+  ) : null
 }
 
 export default App

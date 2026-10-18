@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Volume2, VolumeX, Play, Square, Check, X, BellRing, Flame, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import alarmService from '../services/alarmService'
@@ -63,9 +64,15 @@ function SoundSettingsModal({ onClose }) {
     onClose()
   }
 
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 animate-fade-slide">
+  return typeof document !== 'undefined' ? createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/25 backdrop-blur-[2px] animate-fade-in cursor-pointer"
+      onClick={handleClose}
+    >
+      <div
+        className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 ring-1 ring-slate-900/5 animate-scale-up cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header Modal */}
         <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -166,8 +173,9 @@ function SoundSettingsModal({ onClose }) {
           </button>
         </div>
       </div>
-    </div>
-  )
+    </div>,
+    document.body
+  ) : null
 }
 
 export default SoundSettingsModal

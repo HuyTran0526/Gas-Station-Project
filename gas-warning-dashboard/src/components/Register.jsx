@@ -11,7 +11,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState('tenant') // default to tenant
-  const [deviceId, setDeviceId] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState(1) // 1: Info, 2: OTP
   
@@ -159,9 +158,9 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
           fullName,
           email,
           password,
-          role,
-          deviceId: deviceId ? deviceId.trim().toUpperCase() : 'DEFAULT_DEV',
-          roomName: deviceId ? ('Phòng ' + deviceId.trim().toUpperCase()) : 'Phòng Mặc Định',
+          role: 'tenant',
+          deviceId: 'DEFAULT_DEV',
+          roomName: 'Chưa gán phòng (Chờ chủ trọ xếp)',
           otp
         })
       })
@@ -285,65 +284,17 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
               </div>
             </div>
 
-            {/* Role Selection */}
-            <div>
-              <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                Bạn là ai? *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Landlord Card Option */}
-                <div
-                  onClick={() => setRole('landlord')}
-                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 cursor-pointer select-none transition-all duration-300 ${
-                    role === 'landlord'
-                      ? 'bg-blue-50/50 border-sky-500 text-sky-600 shadow-sm shadow-sky-500/10'
-                      : 'bg-white/60 border-slate-200 text-slate-500 hover:border-slate-350 hover:bg-slate-50/30'
-                  }`}
-                >
-                  <Home className={`w-5 h-5 ${role === 'landlord' ? 'text-sky-500' : 'text-slate-400'}`} />
-                  <span className="text-xs font-bold">Chủ Trọ</span>
-                  <span className="text-[9px] text-slate-400 text-center font-medium leading-tight">Quản lý và vận hành thiết bị</span>
-                </div>
-
-                {/* Tenant Card Option */}
-                <div
-                  onClick={() => setRole('tenant')}
-                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 cursor-pointer select-none transition-all duration-300 ${
-                    role === 'tenant'
-                      ? 'bg-blue-50/50 border-sky-500 text-sky-600 shadow-sm shadow-sky-500/10'
-                      : 'bg-white/60 border-slate-200 text-slate-500 hover:border-slate-350 hover:bg-slate-50/30'
-                  }`}
-                >
-                  <UserCheck className={`w-5 h-5 ${role === 'tenant' ? 'text-sky-500' : 'text-slate-400'}`} />
-                  <span className="text-xs font-bold">Người Thuê</span>
-                  <span className="text-[9px] text-slate-400 text-center font-medium leading-tight">Xem trực tuyến và điều khiển khẩn cấp</span>
-                </div>
+            {/* Thông báo vai trò Người Thuê */}
+            <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-150 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 flex items-center justify-center shrink-0">
+                <UserCheck className="w-4.5 h-4.5" />
               </div>
-            </div>
-
-            {/* Mã Thiết Bị / Số Phòng */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5 ml-1">
-                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                  Mã Thiết Bị / Số Phòng (IoT Device ID)
-                </label>
-                <span className="text-[10px] text-slate-400 font-semibold italic">Không bắt buộc</span>
-              </div>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                  <Cpu className="w-4 h-4 text-sky-500" />
+              <div className="leading-tight">
+                <span className="text-xs font-bold text-sky-900 block">Tài khoản Người Thuê Trọ</span>
+                <span className="text-[11px] text-slate-500 mt-0.5 block">
+                  Sau khi đăng ký thành công, Chủ trọ sẽ duyệt và xếp phòng kèm thiết bị cảnh báo gas tương ứng cho bạn.
                 </span>
-                <input
-                  type="text"
-                  value={deviceId}
-                  onChange={(e) => setDeviceId(e.target.value.toUpperCase().replace(/\s/g, ''))}
-                  placeholder="VD: DEV_101, P102 (Để trống = Mặc định)"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 font-medium placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300 uppercase tracking-wider"
-                />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">
-                Mỗi phòng sẽ có 1 mã riêng để chỉ nhận chuông báo cháy cho phòng của mình.
-              </p>
             </div>
 
             {/* Submit button */}

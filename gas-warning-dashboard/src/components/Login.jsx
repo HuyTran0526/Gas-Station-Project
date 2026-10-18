@@ -171,7 +171,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
       onLoginSuccess(data.token, data.user)
     } catch (err) {
       console.error(err)
-      setGeneralError(`${err.message} (API: ${backendUrl})`)
+      setGeneralError(err.message || 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!')
     } finally {
       setIsLoading(false)
     }
