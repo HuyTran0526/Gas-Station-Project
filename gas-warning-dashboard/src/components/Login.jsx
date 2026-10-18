@@ -167,11 +167,16 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
       if (!res.ok) {
         throw new Error(data.message || 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!')
       }
+
       toast.success('👋 Đăng nhập thành công! Chào mừng trở lại.')
       onLoginSuccess(data.token, data.user)
     } catch (err) {
       console.error(err)
-      setGeneralError(err.message || 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!')
+      if (err.name === 'TypeError' || err.message?.includes('fetch') || err.message?.includes('NetworkError')) {
+        setGeneralError('Máy chủ Cloud đang khởi động (Render Cold Start ~30s). Vui lòng bấm Đăng nhập lại sau vài giây!')
+      } else {
+        setGeneralError(err.message || 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!')
+      }
     } finally {
       setIsLoading(false)
     }
