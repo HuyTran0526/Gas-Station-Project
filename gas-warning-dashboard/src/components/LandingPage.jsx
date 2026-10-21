@@ -132,6 +132,34 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo })
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Social Links (Desktop Header) */}
+            <div className="hidden sm:flex items-center gap-1.5 mr-1 border-r border-slate-800 pr-3">
+              <a
+                href="https://www.facebook.com/people/Safe-Flame/100092285542043/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl border border-slate-700/60 bg-slate-800/60 hover:bg-blue-600 hover:border-blue-500 text-slate-300 hover:text-white transition-all shadow-xs"
+                title="Safe Flame | Can Tho | Facebook"
+                aria-label="Facebook Fanpage Safe Flame"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+              </a>
+              <a
+                href="https://www.tiktok.com/@safeflame05"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl border border-slate-700/60 bg-slate-800/60 hover:bg-rose-600 hover:border-rose-500 text-slate-300 hover:text-white transition-all shadow-xs"
+                title="Safe Flame (@safeflame05) | TikTok"
+                aria-label="TikTok Safe Flame"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46 6.27 6.27 0 0 0 1.93-4.52V8.92a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.93-.35z" />
+                </svg>
+              </a>
+            </div>
+
             <button
               onClick={onGoToDemo}
               className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -192,6 +220,42 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo })
                   <Building2 className="w-5 h-5 text-sky-400" />
                   <span>Đăng Ký Tài Khoản Trọ</span>
                 </button>
+              </div>
+
+              {/* Official Social Channels / Fanpage & TikTok */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                <span className="text-xs font-semibold text-slate-400">
+                  Kênh chính thức Safe Flame:
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
+                  <a
+                    href="https://www.facebook.com/people/Safe-Flame/100092285542043/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-blue-500/40 bg-blue-500/10 hover:bg-blue-600 hover:border-blue-500 text-blue-300 hover:text-white text-xs font-bold transition-all shadow-sm hover:shadow-blue-500/25 active:scale-95 group"
+                    title="Safe Flame | Can Tho | Facebook"
+                  >
+                    <svg className="w-4 h-4 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                    <span>Fanpage Facebook</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
+                  </a>
+
+                  <a
+                    href="https://www.tiktok.com/@safeflame05"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-rose-500/40 bg-rose-500/10 hover:bg-gradient-to-r hover:from-rose-600 hover:to-pink-600 hover:border-rose-500 text-rose-300 hover:text-white text-xs font-bold transition-all shadow-sm hover:shadow-rose-500/25 active:scale-95 group"
+                    title="Safe Flame (@safeflame05) | TikTok"
+                  >
+                    <svg className="w-4 h-4 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46 6.27 6.27 0 0 0 1.93-4.52V8.92a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.93-.35z" />
+                    </svg>
+                    <span>TikTok @safeflame05</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
+                  </a>
+                </div>
               </div>
 
               {/* Quick Trust Badges */}
@@ -692,11 +756,33 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo })
             </div>
           </div>
 
-          <div className="flex items-center gap-6 font-semibold">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 font-semibold">
             <span className="text-red-400 flex items-center gap-1 font-bold">
               <PhoneCall className="w-3.5 h-3.5" />
               Cứu Hỏa Khẩn Cấp: 114
             </span>
+            <a
+              href="https://www.facebook.com/people/Safe-Flame/100092285542043/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
+              <span>Facebook</span>
+            </a>
+            <a
+              href="https://www.tiktok.com/@safeflame05"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-rose-400 transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46 6.27 6.27 0 0 0 1.93-4.52V8.92a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.93-.35z" />
+              </svg>
+              <span>TikTok</span>
+            </a>
             <button onClick={onGoToDemo} className="hover:text-white transition-colors cursor-pointer">Live Demo</button>
             <button onClick={onGoToLogin} className="hover:text-white transition-colors cursor-pointer">Đăng Nhập</button>
             <button onClick={onGoToRegister} className="hover:text-white transition-colors cursor-pointer">Đăng Ký</button>
