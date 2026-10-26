@@ -24,7 +24,7 @@ const SOUND_OPTIONS = [
     name: 'Còi Bíp Báo Khí Gas (Fast Alarm Beep)',
     desc: 'Âm thanh chuông báo rò rỉ gas tần số cao (Bíp - Bíp - Bíp...)',
     icon: BellRing,
-    color: 'text-sky-500 bg-sky-50 border-sky-200'
+    color: 'text-orange-500 bg-orange-50 border-orange-200'
   }
 ]
 

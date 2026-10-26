@@ -43,6 +43,45 @@ const DeviceStateSchema = new mongoose.Schema({
     required: true,
     default: false
   },
+  floor: {
+    type: Number,
+    default: 1
+  },
+  wing: {
+    type: String,
+    enum: ['north', 'south', 'single'],
+    default: 'north'
+  },
+  orderIndex: {
+    type: Number,
+    default: 0
+  },
+  kitchenCorner: {
+    type: String,
+    enum: ['left', 'right'],
+    default: 'left'
+  },
+  inviteCode: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    default: function() {
+      return 'SF-' + Math.floor(100 + Math.random() * 900);
+    }
+  },
+  lastTestedAt: {
+    type: Date,
+    default: null
+  },
+  testScheduleDays: {
+    type: Number,
+    default: 30
+  },
+  testStatus: {
+    type: String,
+    enum: ['idle', 'testing', 'passed', 'warning'],
+    default: 'idle'
+  },
   updatedAt: {
     type: Date,
     default: Date.now

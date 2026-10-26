@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { Capacitor } from '@capacitor/core'
-import { Mail, Lock, User, ShieldAlert, ArrowRight, Loader2, Home, UserCheck, Server, Cpu } from 'lucide-react'
+import { Mail, Lock, User, ShieldAlert, ArrowRight, Loader2, Home, UserCheck, Server, Cpu, Flame } from 'lucide-react'
 import logoImg from '../assets/logo.jpg'
+import logoIconImg from '../assets/logo-icon.png'
 
 function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServerConfig }) {
   const isNative = Capacitor.isNativePlatform()
@@ -181,16 +182,22 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
   }
 
   return (
-    <div className="w-full max-w-md p-6 sm:p-8 glass-card rounded-3xl shadow-xl relative overflow-hidden transition-all duration-500 animate-fade-slide border border-white/50 bg-white/80 hover:shadow-sky-500/10">
-      <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[80px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] rounded-full bg-sky-500/5 blur-[80px] pointer-events-none" />
+    <div className="w-full max-w-md p-6 sm:p-8 glass-card rounded-3xl shadow-xl relative overflow-hidden transition-all duration-500 animate-fade-slide border border-white/50 bg-white/85 hover:shadow-orange-500/15">
+      <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] rounded-full bg-orange-500/10 blur-[80px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] rounded-full bg-amber-500/10 blur-[80px] pointer-events-none" />
 
       <div className="text-center mb-6 relative">
-        <h2 className="text-2xl font-black bg-gradient-to-r from-blue-900 via-blue-800 to-sky-600 bg-clip-text text-transparent">
+        <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-lg shadow-orange-500/25 flex items-center justify-center mb-3 transition-transform duration-300 hover:scale-105">
+          <div className="w-full h-full bg-stone-950 rounded-[14px] p-1.5 flex items-center justify-center overflow-hidden">
+            <img src={logoIconImg} className="w-full h-full object-contain" alt="Safe Flame Logo" />
+          </div>
+        </div>
+        <h2 className="font-brand text-2xl font-black bg-gradient-to-r from-stone-900 via-orange-700 to-orange-500 bg-clip-text text-transparent">
           Tạo tài khoản mới
         </h2>
-        <p className="text-xs text-slate-500 mt-1.5 font-medium">
-          Đăng ký để cùng giám sát và vận hành hệ thống bảo vệ trọ Safe Flame
+        <p className="font-brand text-[10px] sm:text-[11px] text-orange-600 font-extrabold uppercase tracking-widest mt-1.5 flex items-center justify-center gap-1">
+          <Flame className="w-3 h-3 fill-orange-600 text-orange-600 inline shrink-0" />
+          <span>SAFE FLAME IoT Gas Safety System</span>
         </p>
       </div>
 
@@ -219,7 +226,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value.replace(/[<>]/g, ''))}
                   placeholder="Nguyễn Văn A"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
             </div>
@@ -239,7 +246,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
                   value={email}
                   onChange={(e) => setEmail(e.target.value.replace(/[<>]/g, ''))}
                   placeholder="Nhập email..."
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
             </div>
@@ -259,7 +266,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
             </div>
@@ -279,19 +286,19 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Thông báo vai trò Người Thuê */}
-            <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-150 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 flex items-center justify-center shrink-0">
+            <div className="p-3.5 rounded-2xl bg-orange-50/80 border border-orange-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-600 flex items-center justify-center shrink-0">
                 <UserCheck className="w-4.5 h-4.5" />
               </div>
               <div className="leading-tight">
-                <span className="text-xs font-bold text-sky-900 block">Tài khoản Người Thuê Trọ</span>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">
+                <span className="text-xs font-bold text-orange-950 block">Tài khoản Người Thuê Trọ</span>
+                <span className="text-[11px] text-slate-600 mt-0.5 block">
                   Sau khi đăng ký thành công, Chủ trọ sẽ duyệt và xếp phòng kèm thiết bị cảnh báo gas tương ứng cho bạn.
                 </span>
               </div>
@@ -301,7 +308,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-blue-700 hover:from-sky-400 hover:via-blue-500 hover:to-blue-600 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-sky-500/10 hover:shadow-sky-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:via-amber-400 hover:to-orange-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -318,8 +325,8 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
           </>
         ) : (
           <>
-            <div className="p-4 rounded-xl bg-sky-50/50 border border-sky-100 text-center mb-4">
-              <p className="text-sm font-semibold text-slate-700">Nhập mã xác minh</p>
+            <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 text-center mb-4">
+              <p className="text-sm font-semibold text-slate-800">Nhập mã xác minh</p>
               <p className="text-xs text-slate-500 mt-1">Chúng tôi đã gửi mã gồm 6 chữ số đến email <strong>{email}</strong></p>
             </div>
 
@@ -334,14 +341,14 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="000000"
-                className="w-full text-center tracking-[1em] py-3 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300"
+                className="w-full text-center tracking-[1em] py-3 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-green-700 hover:from-emerald-400 hover:via-emerald-500 hover:to-green-600 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:via-amber-400 hover:to-orange-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -386,7 +393,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, backendUrl, onOpenServer
         Đã có tài khoản?{' '}
         <button
           onClick={onSwitchToLogin}
-          className="text-sky-650 hover:underline font-extrabold cursor-pointer bg-transparent border-0"
+          className="text-orange-600 hover:text-orange-500 font-extrabold cursor-pointer bg-transparent border-0"
         >
           Đăng nhập ngay
         </button>

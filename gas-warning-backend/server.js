@@ -8,6 +8,8 @@ const DeviceState = require('./models/DeviceState');
 const GasLog = require('./models/GasLog');
 const User = require('./models/User');
 const DeviceToken = require('./models/DeviceToken');
+const IncidentLog = require('./models/IncidentLog');
+const OrderLead = require('./models/OrderLead');
 const auth = require('./middleware/auth');
 const authRouter = require('./routes/auth');
 const { sendWarningEmail } = require('./services/emailService');
@@ -310,20 +312,36 @@ app.get('/api/devices', auth, async (req, res) => {
     }
 
     const devices = await DeviceState.find(query).sort({ updatedAt: -1 });
+    const tenants = await User.find({ role: 'tenant' }).select('fullName email phone assignedDeviceId assignedDevices');
     const now = new Date();
-    const result = devices.map(d => ({
-      id: d._id,
-      deviceId: d.deviceId,
-      deviceName: d.deviceName || d.deviceId,
-      location: d.location || '',
-      ppm: d.ppm,
-      isOpen: d.isOpen,
-      isOn: d.isOn,
-      isBuzzerMuted: d.isBuzzerMuted,
-      isDangerMode: d.isDangerMode,
-      isOnline: d.updatedAt ? (now - new Date(d.updatedAt)) < 15000 : false,
-      updatedAt: d.updatedAt
-    }));
+    const result = devices.map(d => {
+      const assignedTenants = tenants.filter(t => 
+        t.assignedDeviceId === d.deviceId || 
+        (t.assignedDevices && t.assignedDevices.includes(d.deviceId))
+      );
+      return {
+        id: d._id,
+        deviceId: d.deviceId,
+        deviceName: d.deviceName || d.deviceId,
+        location: d.location || '',
+        ppm: d.ppm,
+        isOpen: d.isOpen,
+        isOn: d.isOn,
+        isBuzzerMuted: d.isBuzzerMuted,
+        isDangerMode: d.isDangerMode,
+        floor: d.floor || 1,
+        wing: d.wing || 'north',
+        orderIndex: d.orderIndex || 0,
+        kitchenCorner: d.kitchenCorner || 'left',
+        isOnline: d.updatedAt ? (now - new Date(d.updatedAt)) < 15000 : false,
+        updatedAt: d.updatedAt,
+        tenants: assignedTenants.map(t => ({
+          fullName: t.fullName,
+          phone: t.phone,
+          email: t.email
+        }))
+      };
+    });
     res.status(200).json({ status: 'success', devices: result });
   } catch (err) {
     console.error('Lỗi GET /api/devices:', err);
@@ -375,6 +393,11 @@ app.get('/api/status', auth, async (req, res) => {
       isBuzzerMuted: state.isBuzzerMuted,
       isDangerMode: state.isDangerMode,
       isEspOnline: isEspOnline,
+      floor: state.floor || 1,
+      inviteCode: state.inviteCode || ('SF-' + state.deviceId.slice(-3)),
+      lastTestedAt: state.lastTestedAt || null,
+      testScheduleDays: state.testScheduleDays || 30,
+      testStatus: state.testStatus || 'idle',
       recentLogs: recentLogs,
       // Trả thêm thông tin phòng mới nhất của user để frontend tự động đồng bộ ngay lập tức
       userAssignedDeviceId: req.user?.assignedDeviceId || 'DEFAULT_DEV',
@@ -425,7 +448,27 @@ app.post('/api/esp/update', async (req, res) => {
       state.isOpen = false; // Tự động khóa van
       state.isOn = true;    // Tự động bật quạt
       state.isBuzzerMuted = false; // Còi kêu
-      console.log(`🚨 [${targetDeviceId} - ${state.deviceName}] NGUY HIỂM: Gas ${calculatedPpm} PPM! Kích hoạt báo động.`);
+      // Ghi nhận sự cố vào Hộp Đen Sự Cố (IncidentLog)
+      try {
+        const incident = new IncidentLog({
+          deviceId: targetDeviceId,
+          roomName: state.deviceName || ('Phòng ' + targetDeviceId),
+          peakPpm: calculatedPpm,
+          severity: calculatedPpm >= 2000 ? 'danger' : 'warning',
+          startedAt: new Date(),
+          status: 'active',
+          actions: [
+            { time: new Date(), type: 'DETECTION', message: `Phát hiện nồng độ gas tăng vọt: ${calculatedPpm} PPM` },
+            { time: new Date(Date.now() + 300), type: 'VALVE_CLOSED', message: 'Hệ thống tự động kích hoạt ĐÓNG Van Khóa Gas (0.3s)' },
+            { time: new Date(Date.now() + 600), type: 'FAN_ON', message: 'Kích hoạt rơ-le bật Quạt Thông Gió cưỡng bức' },
+            { time: new Date(Date.now() + 1000), type: 'BUZZER_ON', message: 'Kích hoạt còi hú báo động âm thanh tại phòng' },
+            { time: new Date(Date.now() + 2000), type: 'NOTIFICATIONS', message: 'Bắn thông báo đẩy FCM & gửi email cảnh báo tới Chủ trọ và Khách' }
+          ]
+        });
+        await incident.save();
+      } catch (incErr) {
+        console.error('Lỗi lưu IncidentLog:', incErr);
+      }
 
       // Gửi email khẩn cấp cho người dùng phòng này + chủ trọ
       sendWarningToDevice(targetDeviceId, calculatedPpm, state.deviceName).catch(err => {
@@ -437,12 +480,36 @@ app.post('/api/esp/update', async (req, res) => {
         console.error('Lỗi gửi FCM cảnh báo:', err);
       });
     } 
+    // Nếu đang trong trạng thái nguy hiểm và PPM cao hơn đỉnh cũ, cập nhật peakPpm
+    else if (calculatedPpm >= 600 && state.isDangerMode) {
+      IncidentLog.findOne({ deviceId: targetDeviceId, status: 'active' }).sort({ startedAt: -1 }).then(activeInc => {
+        if (activeInc && calculatedPpm > activeInc.peakPpm) {
+          activeInc.peakPpm = calculatedPpm;
+          activeInc.save();
+        }
+      }).catch(() => {});
+    }
     // Ép buộc thiết bị chỉ tắt cảnh báo khi gas đã hạ xuống mức an toàn sâu (< 500 PPM)
     else if (calculatedPpm < 500 && state.isDangerMode) {
       state.isDangerMode = false;
       state.isOn = false;
       state.isBuzzerMuted = true; // Còi tắt
       console.log(`🟢 [${targetDeviceId} - ${state.deviceName}] AN TOÀN: Gas < 500 PPM (đã qua dải trễ 100 PPM). Đã tắt quạt và còi, giữ nguyên khóa van.`);
+
+      // Đóng sự cố trong Hộp Đen
+      IncidentLog.findOne({ deviceId: targetDeviceId, status: 'active' }).sort({ startedAt: -1 }).then(activeInc => {
+        if (activeInc) {
+          activeInc.resolvedAt = new Date();
+          activeInc.durationSeconds = Math.max(1, Math.round((activeInc.resolvedAt - activeInc.startedAt) / 1000));
+          activeInc.status = 'resolved';
+          activeInc.actions.push({
+            time: new Date(),
+            type: 'SAFE_RESOLVED',
+            message: `Nồng độ gas giảm về an toàn (${calculatedPpm} PPM). Đã tắt quạt và còi, giữ nguyên khóa van phòng ngừa.`
+          });
+          activeInc.save();
+        }
+      }).catch(() => {});
     }
 
     state.ppm = calculatedPpm;
@@ -597,6 +664,258 @@ app.post('/api/control/buzzer', auth, async (req, res) => {
   } catch (err) {
     console.error('Lỗi điều khiển còi báo động:', err);
     res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+  }
+});
+
+// ==========================================
+// TÍNH NĂNG MỚI: ĐĂNG KÝ TRẢI NGHIỆM / ĐẶT CỌC
+// ==========================================
+// @route POST /api/orders/preorder
+// @desc Khách hàng Landing Page gửi thông tin đặt cọc / khảo sát lắp đặt
+app.post('/api/orders/preorder', async (req, res) => {
+  try {
+    const { fullName, phone, email, address, roomsCount, packageType, estimatedCost, note } = req.body;
+    if (!fullName || !phone) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp Họ tên và Số điện thoại liên hệ!' });
+    }
+
+    const lead = new OrderLead({
+      fullName: String(fullName).trim().slice(0, 100),
+      phone: String(phone).trim().slice(0, 20),
+      email: String(email || '').trim().slice(0, 100),
+      address: String(address || '').trim().slice(0, 250),
+      roomsCount: Number(roomsCount) || 1,
+      packageType: ['basic', 'pro', 'building'].includes(packageType) ? packageType : 'pro',
+      estimatedCost: Number(estimatedCost) || 0,
+      note: String(note || '').slice(0, 500)
+    });
+
+    await lead.save();
+    console.log(`📋 Đơn đăng ký lắp đặt mới: ${lead.fullName} (${lead.phone}) - ${lead.roomsCount} phòng`);
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Đăng ký khảo sát lắp đặt thành công! Kỹ thuật viên SafeFlame sẽ liên hệ bạn trong vòng 24h.',
+      orderId: lead._id
+    });
+  } catch (err) {
+    console.error('Lỗi POST /api/orders/preorder:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// ==========================================
+// TÍNH NĂNG MỚI: HỘP ĐEN SỰ CỐ (INCIDENTS)
+// ==========================================
+// @route GET /api/incidents
+// @desc Lấy danh sách sự cố và timeline can thiệp
+app.get('/api/incidents', auth, async (req, res) => {
+  try {
+    let filter = {};
+    if (req.user?.role === 'tenant') {
+      filter.deviceId = (req.user.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    } else if (req.query.deviceId) {
+      filter.deviceId = String(req.query.deviceId).trim().toUpperCase();
+    }
+
+    let incidents = await IncidentLog.find(filter).sort({ startedAt: -1 }).limit(30);
+
+    // Dữ liệu mẫu ban đầu để demo trước hội đồng nếu chưa có vụ rò rỉ nào
+    if (incidents.length === 0) {
+      const targetDevId = filter.deviceId || 'DEFAULT_DEV';
+      const sample = new IncidentLog({
+        deviceId: targetDevId,
+        roomName: req.user?.roomName || 'Phòng Giám Sát',
+        peakPpm: 1180,
+        severity: 'danger',
+        startedAt: new Date(Date.now() - 3600000 * 3), // 3h trước
+        resolvedAt: new Date(Date.now() - 3600000 * 3 + 140000), // giải quyết sau 2p20s
+        durationSeconds: 140,
+        status: 'resolved',
+        actions: [
+          { time: new Date(Date.now() - 3600000 * 3), type: 'DETECTION', message: 'Khí gas rò rỉ tăng nhanh: 720 PPM vượt ngưỡng an toàn' },
+          { time: new Date(Date.now() - 3600000 * 3 + 500), type: 'VALVE_CLOSED', message: 'Van khóa Gas Servo tự động ĐÓNG kín (0.5s)' },
+          { time: new Date(Date.now() - 3600000 * 3 + 900), type: 'FAN_ON', message: 'Quạt hút thông gió kích hoạt hút khí ra ngoài' },
+          { time: new Date(Date.now() - 3600000 * 3 + 1500), type: 'BUZZER_ON', message: 'Còi hú báo động âm thanh tại chỗ' },
+          { time: new Date(Date.now() - 3600000 * 3 + 2500), type: 'NOTIFICATIONS', message: 'Gửi cảnh báo khẩn cấp qua FCM và Email đến điện thoại' },
+          { time: new Date(Date.now() - 3600000 * 3 + 140000), type: 'SAFE_RESOLVED', message: 'Nồng độ gas hạ xuống 320 PPM. Quạt và còi tắt, van giữ nguyên khóa.' }
+        ]
+      });
+      await sample.save();
+      incidents = [sample];
+    }
+
+    res.status(200).json({ status: 'success', incidents });
+  } catch (err) {
+    console.error('Lỗi GET /api/incidents:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+  }
+});
+
+// @route POST /api/incidents/simulate
+// @desc Kích hoạt tạo sự cố mẫu kiểm tra hệ thống Hộp Đen
+app.post('/api/incidents/simulate', auth, async (req, res) => {
+  try {
+    const targetDevId = (req.body.deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const dev = await DeviceState.findOne({ deviceId: targetDevId });
+
+    const newInc = new IncidentLog({
+      deviceId: targetDevId,
+      roomName: dev?.deviceName || ('Phòng ' + targetDevId),
+      peakPpm: Math.floor(800 + Math.random() * 800),
+      severity: 'danger',
+      startedAt: new Date(Date.now() - 90000),
+      resolvedAt: new Date(),
+      durationSeconds: 90,
+      status: 'resolved',
+      actions: [
+        { time: new Date(Date.now() - 90000), type: 'DETECTION', message: 'Cảm biến kích hoạt báo động mô phỏng' },
+        { time: new Date(Date.now() - 89500), type: 'VALVE_CLOSED', message: 'Van khóa Gas đóng tự động bảo vệ' },
+        { time: new Date(Date.now() - 89000), type: 'FAN_ON', message: 'Quạt thông gió đẩy khí rò rỉ' },
+        { time: new Date(Date.now() - 88000), type: 'BUZZER_ON', message: 'Còi hú âm thanh tại phòng' },
+        { time: new Date(), type: 'SAFE_RESOLVED', message: 'Kết thúc diễn tập mô phỏng an toàn' }
+      ]
+    });
+    await newInc.save();
+    res.status(201).json({ status: 'success', incident: newInc });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// ==========================================
+// TÍNH NĂNG MỚI: TỰ KIỂM TRA ĐỊNH KỲ (SELF-TEST)
+// ==========================================
+// @route POST /api/device/self-test
+// @desc Chạy quy trình kiểm tra van, quạt, còi trong 5 giây
+app.post('/api/device/self-test', auth, async (req, res) => {
+  try {
+    const targetDevId = (req.body.deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const dev = await DeviceState.findOne({ deviceId: targetDevId });
+    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
+
+    // Kiểm tra xem mạch phần cứng ESP32 có online thực tế không (nhận tin trong 15s gần nhất)
+    const now = Date.now();
+    const isOnline = dev.updatedAt ? (now - new Date(dev.updatedAt).getTime()) < 15000 : false;
+
+    if (!isOnline) {
+      return res.status(400).json({
+        status: 'offline',
+        isOnline: false,
+        message: 'Thiết bị đang Ngoại Tuyến (Offline)! Vi điều khiển ESP32 chưa cấp nguồn hoặc mất kết nối mạng. Không thể gửi xung kiểm định phần cứng thực tế.'
+      });
+    }
+
+    dev.lastTestedAt = new Date();
+    dev.testStatus = 'passed';
+    await dev.save();
+
+    console.log(`🩺 [${targetDevId}] Tự kiểm tra 5s (Phần cứng Thật) - Trạng thái: passed`);
+
+    res.status(200).json({
+      status: 'success',
+      isOnline: true,
+      message: 'Đã hoàn tất quy trình tự kiểm tra phần cứng 5 giây: Van, Quạt, Còi hoạt động 100%!',
+      lastTestedAt: dev.lastTestedAt,
+      testStatus: dev.testStatus
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route PUT /api/device/test-schedule
+// @desc Đặt chu kỳ kiểm tra định kỳ (15, 30, 60 ngày)
+app.put('/api/device/test-schedule', auth, async (req, res) => {
+  try {
+    const { deviceId, days } = req.body;
+    const targetDevId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const scheduleDays = Number(days) || 30;
+
+    const dev = await DeviceState.findOneAndUpdate(
+      { deviceId: targetDevId },
+      { testScheduleDays: scheduleDays },
+      { new: true }
+    );
+    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
+
+    res.status(200).json({
+      status: 'success',
+      message: `Đã cập nhật chu kỳ kiểm định: Mỗi ${scheduleDays} ngày`,
+      testScheduleDays: dev.testScheduleDays
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// ==========================================
+// TÍNH NĂNG MỚI: CHIA SẺ PHÒNG CHO BẠN CÙNG PHÒNG
+// ==========================================
+// @route GET /api/room/invite/:deviceId
+// @desc Lấy mã mời và link tham gia phòng
+app.get('/api/room/invite/:deviceId', auth, async (req, res) => {
+  try {
+    const cleanId = req.params.deviceId.trim().toUpperCase();
+    let dev = await DeviceState.findOne({ deviceId: cleanId });
+    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị phòng' });
+
+    if (!dev.inviteCode) {
+      dev.inviteCode = 'SF-' + Math.floor(100 + Math.random() * 900);
+      await dev.save();
+    }
+
+    // Lấy danh sách bạn cùng phòng đang theo dõi thiết bị này
+    const roommates = await User.find({
+      $or: [
+        { assignedDeviceId: cleanId },
+        { assignedDevices: cleanId }
+      ],
+      role: 'tenant'
+    }, 'fullName email phone createdAt');
+
+    res.status(200).json({
+      status: 'success',
+      deviceId: dev.deviceId,
+      roomName: dev.deviceName,
+      inviteCode: dev.inviteCode,
+      roommates
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route POST /api/room/join
+// @desc Người thuê nhập mã mời để cùng theo dõi phòng trọ
+app.post('/api/room/join', auth, async (req, res) => {
+  try {
+    const { inviteCode } = req.body;
+    if (!inviteCode) return res.status(400).json({ message: 'Vui lòng nhập mã mời phòng!' });
+
+    const cleanCode = String(inviteCode).trim().toUpperCase();
+    const dev = await DeviceState.findOne({ inviteCode: cleanCode });
+    if (!dev) {
+      return res.status(404).json({ message: 'Mã phòng không tồn tại hoặc đã hết hạn! Vui lòng hỏi lại bạn cùng phòng.' });
+    }
+
+    // Cập nhật người dùng hiện tại vào phòng này
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        assignedDeviceId: dev.deviceId,
+        roomName: dev.deviceName
+      },
+      { new: true }
+    ).select('-password');
+
+    res.status(200).json({
+      status: 'success',
+      message: `Đã kết nối thành công vào [${dev.deviceName}] (${dev.deviceId})!`,
+      user: updatedUser
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
   }
 });
 

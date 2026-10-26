@@ -35,11 +35,22 @@ import {
   Globe,
   Share2,
   Smartphone,
-  Monitor
+  Monitor,
+  ClipboardList,
+  FileText,
+  MapPin,
+  Layers,
+  Send
 } from 'lucide-react'
+import FloorPlanModal from './FloorPlanModal'
+import IncidentBlackboxModal from './IncidentBlackboxModal'
 
 export default function AdminDashboard({ currentUser, token, backendUrl, onSwitchToMonitor, onRefreshDevices }) {
-  const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'tenants' | 'traffic'
+  const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'tenants' | 'orders' | 'traffic'
+  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false)
+  const [isBlackboxOpen, setIsBlackboxOpen] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [stats, setStats] = useState({ totalRooms: 0, onlineRooms: 0, dangerRooms: 0, totalTenants: 0 })
@@ -115,9 +126,63 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
     }
   }
 
+  // Tải danh sách đơn đăng ký khảo sát từ Landing Page
+  const fetchOrders = async () => {
+    setIsOrdersLoading(true)
+    try {
+      const res = await fetch(`${backendUrl}/admin/orders`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOrders(data.orders || [])
+      }
+    } catch (err) {
+      console.warn('Lỗi tải orders:', err)
+    } finally {
+      setIsOrdersLoading(false)
+    }
+  }
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const res = await fetch(`${backendUrl}/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (res.ok) {
+        toast.success('Cập nhật trạng thái thành công!')
+        fetchOrders()
+      }
+    } catch (err) {
+      toast.error('Lỗi cập nhật đơn hàng')
+    }
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa đơn đăng ký này?')) return
+    try {
+      const res = await fetch(`${backendUrl}/admin/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (res.ok) {
+        toast.success('Đã xóa đơn đăng ký')
+        fetchOrders()
+      }
+    } catch (err) {
+      toast.error('Lỗi xóa đơn')
+    }
+  }
+
   useEffect(() => {
     fetchOverviewData()
     fetchAnalytics()
+    fetchOrders()
   }, [backendUrl, token])
 
   const handleCopyLink = (url, key) => {
@@ -383,15 +448,15 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
     <div className="space-y-6 animate-fade-slide">
       {/* Top Header Card */}
       <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/60 bg-white/80 shadow-xl relative overflow-hidden">
-        <div className="absolute top-[-40%] right-[-10%] w-72 h-72 rounded-full bg-blue-500/10 blur-[80px] pointer-events-none" />
+        <div className="absolute top-[-40%] right-[-10%] w-72 h-72 rounded-full bg-orange-500/10 blur-[80px] pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-black uppercase tracking-wider mb-2">
+            <div className="font-brand inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-black uppercase tracking-wider mb-2">
               <Building2 className="w-3.5 h-3.5" />
               <span>Bảng Điều Khiển Quản Trị Trọ</span>
             </div>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-blue-900 via-blue-800 to-sky-600 bg-clip-text text-transparent">
-              Quản Lý Khu Trọ SafeFlame
+            <h2 className="font-brand text-xl sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-stone-900 via-orange-800 to-orange-500 bg-clip-text text-transparent">
+              Quản Lý Khu Trọ Safe Flame
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
               Giám sát trạng thái IoT, quản lý danh sách phòng, phân quyền người thuê và can thiệp khẩn cấp.
@@ -401,7 +466,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => onSwitchToMonitor('DEFAULT_DEV', 'Trạm Gas Chính')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-sky-500/20 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
             >
               <Activity className="w-4 h-4" />
               <span>Giám Sát Trực Tiếp</span>
@@ -409,10 +474,10 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             <button
               onClick={fetchOverviewData}
               disabled={isLoading}
-              className="p-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-sky-600 transition-all cursor-pointer shadow-xs active:scale-95"
+              className="p-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-orange-600 transition-all cursor-pointer shadow-xs active:scale-95"
               title="Làm mới dữ liệu"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-600' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-orange-600' : ''}`} />
             </button>
           </div>
         </div>
@@ -420,7 +485,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
         {/* 4 Cards Thống kê */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6">
           <div className="p-4 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
               <Home className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
@@ -469,7 +534,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             onClick={() => setActiveTab('devices')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               activeTab === 'devices'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
@@ -480,7 +545,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             onClick={() => setActiveTab('tenants')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               activeTab === 'tenants'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
@@ -488,15 +553,45 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             <span>Người Thuê ({tenants.length})</span>
           </button>
           <button
+            onClick={() => { setActiveTab('orders'); fetchOrders(); }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              activeTab === 'orders'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Đơn Đăng Ký ({orders.length})</span>
+          </button>
+          <button
             onClick={() => { setActiveTab('traffic'); fetchAnalytics(); }}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               activeTab === 'traffic'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <BarChart2 className="w-4 h-4" />
-            <span>Chiến Dịch & Traffic ({analytics.totalClicks})</span>
+            <span>Chiến Dịch ({analytics.totalClicks})</span>
+          </button>
+        </div>
+
+        {/* Global Action Buttons: Sơ đồ mặt bằng 2D & Hộp Đen Sự Cố */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsFloorPlanOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+          >
+            <Layers className="w-4 h-4 text-orange-600" />
+            <span>Sơ Đồ Mặt Bằng 2D</span>
+          </button>
+
+          <button
+            onClick={() => setIsBlackboxOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+          >
+            <FileText className="w-4 h-4 text-orange-400" />
+            <span>Hộp Đen Sự Cố PCCC</span>
           </button>
         </div>
 
@@ -508,7 +603,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
               disabled={isAnalyticsLoading}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isAnalyticsLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
+              <RefreshCw className={`w-4 h-4 ${isAnalyticsLoading ? 'animate-spin text-orange-600' : 'text-slate-500'}`} />
               <span>Cập Nhật Số Liệu</span>
             </button>
           </div>
@@ -523,14 +618,14 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={activeTab === 'devices' ? 'Tìm phòng, mã ID...' : 'Tìm người thuê, email...'}
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
               />
             </div>
 
             {activeTab === 'devices' ? (
               <button
                 onClick={handleOpenAddDevice}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm Phòng</span>
@@ -538,7 +633,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             ) : (
               <button
                 onClick={handleOpenAddTenant}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Thêm Khách</span>
@@ -562,7 +657,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   className={`glass-card p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${
                     isDanger
                       ? 'border-red-300 bg-red-50/40 shadow-red-500/10'
-                      : 'border-white/80 bg-white/85 hover:shadow-lg hover:border-sky-300'
+                      : 'border-white/80 bg-white/85 hover:shadow-lg hover:border-orange-400'
                   }`}
                 >
                   {/* Top Bar of Card */}
@@ -622,7 +717,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                         <span>{dev.isOpen ? '🔓 Mở Van' : '🔒 Khóa Van'}</span>
                       </div>
                       <div className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
-                        dev.isOn ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-slate-100 text-slate-500'
+                        dev.isOn ? 'bg-orange-50 text-orange-700 border border-orange-150' : 'bg-slate-100 text-slate-500'
                       }`}>
                         <span className="flex items-center gap-1">
                           <Fan className={`w-3.5 h-3.5 ${dev.isOn ? 'animate-spin' : ''}`} />
@@ -637,8 +732,8 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                     </div>
 
                     {/* Tenant Info */}
-                    <div className="text-xs text-slate-600 mb-4 p-2.5 rounded-xl bg-blue-50/50 border border-blue-100">
-                      <span className="text-[10px] font-extrabold text-blue-800 uppercase block mb-1">Người thuê phòng:</span>
+                    <div className="text-xs text-slate-600 mb-4 p-2.5 rounded-xl bg-orange-50/50 border border-orange-100">
+                      <span className="text-[10px] font-extrabold text-orange-800 uppercase block mb-1">Người thuê phòng:</span>
                       {dev.tenants && dev.tenants.length > 0 ? (
                         <div className="space-y-0.5">
                           {dev.tenants.map(t => (
@@ -658,7 +753,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   <div className="pt-3 border-t border-slate-200/70 flex items-center justify-between gap-2">
                     <button
                       onClick={() => onSwitchToMonitor(dev.deviceId, dev.deviceName)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                       title="Chuyển sang trang Home để điều khiển trực tiếp phòng này"
                     >
                       <Activity className="w-3.5 h-3.5" />
@@ -740,10 +835,10 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                       </td>
 
                       <td className="py-4 px-6">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold">
-                          <Home className="w-3.5 h-3.5 text-blue-600" />
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 text-xs font-bold">
+                          <Home className="w-3.5 h-3.5 text-orange-600" />
                           <span>{tenant.roomName || 'Phòng ' + tenant.assignedDeviceId}</span>
-                          <span className="text-[10px] text-blue-500 font-mono font-semibold">({tenant.assignedDeviceId || 'N/A'})</span>
+                          <span className="text-[10px] text-orange-500 font-mono font-semibold">({tenant.assignedDeviceId || 'N/A'})</span>
                         </div>
                       </td>
 
@@ -751,16 +846,16 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenEditTenant(tenant)}
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 font-bold text-xs transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-700 font-bold text-xs transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                             title="Chỉnh sửa thông tin khách thuê (Họ tên, SĐT, Email, Đặt lại mật khẩu)"
                           >
-                            <Edit2 className="w-3.5 h-3.5 text-sky-600" />
+                            <Edit2 className="w-3.5 h-3.5 text-orange-600" />
                             <span>Sửa</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenAssignModal(tenant)}
-                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-bold text-xs transition-all cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-700 font-bold text-xs transition-all cursor-pointer"
                             title="Đổi phòng hoặc gán phòng cho khách"
                           >
                             Đổi Phòng
@@ -963,7 +1058,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
               </div>
               <button
                 onClick={fetchAnalytics}
-                className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isAnalyticsLoading ? 'animate-spin' : ''}`} />
                 <span>Cập nhật</span>
@@ -1003,7 +1098,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                             <span className="flex items-center gap-1.5 font-semibold text-slate-700">
                               {log.device === 'mobile' ? (
                                 <>
-                                  <Smartphone className="w-3.5 h-3.5 text-sky-500" />
+                                  <Smartphone className="w-3.5 h-3.5 text-orange-500" />
                                   <span>Điện thoại</span>
                                 </>
                               ) : (
@@ -1040,6 +1135,142 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
         </div>
       )}
 
+      {/* TAB 4: QUẢN LÝ ĐƠN ĐĂNG KÝ KHẢO SÁT & ĐẶT CỌC (LEADS TỪ LANDING PAGE) */}
+      {activeTab === 'orders' && (
+        <div className="space-y-6 animate-fade-slide">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-3">
+              <div>
+                <h4 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-orange-600" />
+                  Danh Sách Khách Hàng Đăng Ký Khảo Sát & Lắp Đặt
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Thu thập từ Công cụ Tính Dự Toán và Form Đăng Ký trên Landing Page SafeFlame
+                </p>
+              </div>
+
+              <button
+                onClick={fetchOrders}
+                disabled={isOrdersLoading}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isOrdersLoading ? 'animate-spin' : ''}`} />
+                <span>Cập nhật</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/75 border-b border-slate-200/80 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                    <th className="py-3 px-4">Khách Hàng</th>
+                    <th className="py-3 px-4">Số Điện Thoại & Email</th>
+                    <th className="py-3 px-4">Địa Chỉ Khu Trọ</th>
+                    <th className="py-3 px-4 text-center">Số Phòng & Gói</th>
+                    <th className="py-3 px-4 text-right">Dự Toán Chi Phí</th>
+                    <th className="py-3 px-4 text-center">Trạng Thái</th>
+                    <th className="py-3 px-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-600">
+                  {orders && orders.length > 0 ? (
+                    orders.map((ord) => (
+                      <tr key={ord._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          {ord.fullName}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <a href={`tel:${ord.phone}`} className="font-mono font-bold text-orange-600 hover:underline block">
+                            📞 {ord.phone}
+                          </a>
+                          {ord.email && (
+                            <span className="text-[11px] text-slate-400 block truncate max-w-[160px]">
+                              {ord.email}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-slate-700 max-w-[200px] truncate" title={ord.address}>
+                          {ord.address}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="font-extrabold text-slate-900 block">{ord.roomsCount} phòng</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase inline-block bg-slate-100 text-slate-600">
+                            {ord.packageType === 'basic' ? 'Cơ Bản' : ord.packageType === 'pro' ? 'Tiêu Chuẩn' : 'Tòa Nhà'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900">
+                          {ord.estimatedCost ? ord.estimatedCost.toLocaleString('vi-VN') + ' đ' : 'Chưa định'}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <select
+                            value={ord.status || 'pending'}
+                            onChange={(e) => handleUpdateOrderStatus(ord._id, e.target.value)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase cursor-pointer border ${
+                              ord.status === 'installed'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : ord.status === 'contacted'
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : ord.status === 'cancelled'
+                                ? 'bg-slate-100 text-slate-400 border-slate-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            <option value="pending">Chờ tư vấn</option>
+                            <option value="contacted">Đã liên hệ</option>
+                            <option value="installed">Đã hoàn tất</option>
+                            <option value="cancelled">Đã hủy</option>
+                          </select>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => handleDeleteOrder(ord._id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Xóa đơn"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-slate-400 italic">
+                        Chưa có khách hàng nào đăng ký khảo sát lắp đặt.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SƠ ĐỒ MẶT BẰNG 2D */}
+      <FloorPlanModal
+        isOpen={isFloorPlanOpen}
+        onClose={() => setIsFloorPlanOpen(false)}
+        devices={devices}
+        currentDeviceId=""
+        userRole="landlord"
+        backendUrl={backendUrl}
+        token={token}
+        onRefreshDevices={fetchOverviewData}
+        onSelectDevice={(id) => {
+          const dev = devices.find(d => d.deviceId === id)
+          if (onSwitchToMonitor) onSwitchToMonitor(id, dev?.deviceName || id)
+        }}
+      />
+
+      {/* MODAL HỘP ĐEN SỰ CỐ PCCC */}
+      <IncidentBlackboxModal
+        isOpen={isBlackboxOpen}
+        onClose={() => setIsBlackboxOpen(false)}
+        backendUrl={backendUrl}
+        token={token}
+      />
+
       {/* MODAL THÊM / SỬA PHÒNG */}
       {isDeviceModalOpen && typeof document !== 'undefined' && createPortal(
         <div
@@ -1053,7 +1284,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-sky-100 rounded-xl text-sky-600">
+                <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -1085,7 +1316,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={deviceForm.deviceId}
                   onChange={(e) => setDeviceForm({ ...deviceForm, deviceId: e.target.value.toUpperCase().replace(/\s/g, '') })}
                   placeholder="VD: P101, DEV_101"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
                 {!editingDevice && (
                   <p className="text-[10px] text-slate-400 mt-1 ml-1">Mã này dùng để nạp vào mạch ESP32 hoặc phân biệt phòng.</p>
@@ -1102,7 +1333,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={deviceForm.deviceName}
                   onChange={(e) => setDeviceForm({ ...deviceForm, deviceName: e.target.value })}
                   placeholder="VD: Phòng 101 - Tầng 1"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
               </div>
 
@@ -1115,7 +1346,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={deviceForm.location}
                   onChange={(e) => setDeviceForm({ ...deviceForm, location: e.target.value })}
                   placeholder="VD: Khu vực bếp, Gần bình gas"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
               </div>
 
@@ -1130,7 +1361,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                 <button
                   type="submit"
                   disabled={isActionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                 >
                   {isActionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingDevice ? 'Cập Nhật' : 'Tạo Phòng'}</span>
@@ -1158,7 +1389,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-sky-100 rounded-xl text-sky-600">
+                <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
                   {editingTenant ? <Edit2 className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
                 </div>
                 <div>
@@ -1192,7 +1423,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={tenantForm.fullName}
                   onChange={(e) => setTenantForm({ ...tenantForm, fullName: e.target.value })}
                   placeholder="VD: Nguyễn Văn A"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
               </div>
 
@@ -1206,7 +1437,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={tenantForm.email}
                   onChange={(e) => setTenantForm({ ...tenantForm, email: e.target.value })}
                   placeholder="khachthue@gmail.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
               </div>
 
@@ -1220,7 +1451,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={tenantForm.password}
                   onChange={(e) => setTenantForm({ ...tenantForm, password: e.target.value })}
                   placeholder={editingTenant ? 'Nhập mật khẩu mới nếu muốn đổi cho khách...' : 'Tối thiểu 6 ký tự'}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
                 {editingTenant && (
                   <p className="text-[10px] text-slate-400 mt-1 ml-1">
@@ -1238,7 +1469,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                   value={tenantForm.phone}
                   onChange={(e) => setTenantForm({ ...tenantForm, phone: e.target.value })}
                   placeholder="VD: 0987654321"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
                 />
               </div>
 
@@ -1249,7 +1480,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                 <select
                   value={tenantForm.deviceId}
                   onChange={(e) => setTenantForm({ ...tenantForm, deviceId: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all cursor-pointer bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all cursor-pointer bg-white"
                 >
                   {devices.map((d) => (
                     <option key={d.deviceId} value={d.deviceId}>
@@ -1273,7 +1504,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                 <button
                   type="submit"
                   disabled={isActionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                 >
                   {isActionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingTenant ? 'Lưu Thay Đổi' : 'Tạo Tài Khoản'}</span>
@@ -1298,7 +1529,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-sky-100 rounded-xl text-sky-600">
+                <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
@@ -1325,7 +1556,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                       key={d.deviceId}
                       className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
                         assignDeviceId === d.deviceId
-                          ? 'bg-blue-50/70 border-blue-500 text-blue-900 font-bold shadow-xs ring-1 ring-blue-500/20'
+                          ? 'bg-orange-50/80 border-orange-500 text-orange-950 font-bold shadow-xs ring-1 ring-orange-500/20'
                           : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -1336,7 +1567,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                           value={d.deviceId}
                           checked={assignDeviceId === d.deviceId}
                           onChange={() => setAssignDeviceId(d.deviceId)}
-                          className="accent-blue-600"
+                          className="accent-orange-600"
                         />
                         <div>
                           <span className="text-sm block font-bold text-slate-800">{d.deviceName}</span>
@@ -1362,7 +1593,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
                 <button
                   type="submit"
                   disabled={isActionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                 >
                   {isActionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>Xác Nhận Gán Phòng</span>

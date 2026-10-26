@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { Capacitor } from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
-import { Mail, Lock, ShieldAlert, Loader2, LogIn, Eye, EyeOff, Server, Power } from 'lucide-react'
+import { Mail, Lock, ShieldAlert, Loader2, LogIn, Eye, EyeOff, Server, Power, Flame } from 'lucide-react'
 import logoImg from '../assets/logo.jpg'
+import logoIconImg from '../assets/logo-icon.png'
 
 function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerConfig }) {
   const isNative = Capacitor.isNativePlatform()
@@ -264,23 +265,26 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
   }
 
   return (
-    <div className="w-full max-w-md p-8 sm:p-10 glass-card rounded-[32px] shadow-2xl relative overflow-hidden transition-all duration-300 border border-white/50 bg-white/80 animate-fade-slide hover:shadow-sky-500/10">
-      {/* Dynamic ambient background glow */}
-      <div className="absolute top-[-30%] left-[-30%] w-[70%] h-[70%] rounded-full bg-gradient-to-tr from-blue-500/5 to-sky-400/5 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-30%] right-[-30%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-red-500/5 to-amber-500/5 blur-[100px] pointer-events-none" />
+    <div className="w-full max-w-md p-8 sm:p-10 glass-card rounded-[32px] shadow-2xl relative overflow-hidden transition-all duration-300 border border-white/50 bg-white/85 animate-fade-slide hover:shadow-orange-500/15">
+      {/* Dynamic ambient background glow in warm flame tones */}
+      <div className="absolute top-[-30%] left-[-30%] w-[70%] h-[70%] rounded-full bg-gradient-to-tr from-orange-500/10 to-amber-400/10 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-30%] right-[-30%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-red-500/10 to-orange-500/10 blur-[100px] pointer-events-none" />
 
       {loginMode === 'login' ? (
         <>
           {/* Brand Header with App Logo */}
           <div className="text-center mb-8 relative">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-slate-200/50 flex items-center justify-center p-1.5 mb-4 shadow-md shadow-sky-500/5 overflow-hidden transition-transform duration-300 hover:scale-105">
-              <img src={logoImg} className="w-full h-full object-contain" alt="Safe Flame Logo" />
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-lg shadow-orange-500/25 flex items-center justify-center mb-3.5 transition-transform duration-300 hover:scale-105">
+              <div className="w-full h-full bg-stone-950 rounded-[14px] p-1.5 flex items-center justify-center overflow-hidden">
+                <img src={logoIconImg} className="w-full h-full object-contain" alt="Safe Flame Logo" />
+              </div>
             </div>
-            <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-900 via-blue-800 to-sky-600 bg-clip-text text-transparent">
+            <h2 className="font-brand text-2xl sm:text-3xl font-black tracking-tight bg-gradient-to-r from-stone-900 via-orange-700 to-orange-500 bg-clip-text text-transparent">
               Đăng nhập
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-2 font-semibold">
-              Hệ thống giám sát rò rỉ khí Gas SAFE FLAME
+            <p className="font-brand text-[10px] sm:text-[11px] text-orange-600 font-extrabold uppercase tracking-widest mt-1.5 flex items-center justify-center gap-1">
+              <Flame className="w-3 h-3 fill-orange-600 text-orange-600 inline shrink-0" />
+              <span>SAFE FLAME IoT Gas Safety System</span>
             </p>
           </div>
 
@@ -312,9 +316,9 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                     if (emailError) setEmailError(false)
                   }}
                   placeholder="Nhập email..."
-                  className={`w-full pl-9 pr-4 py-3 rounded-2xl border text-sm text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300 ${emailError
+                  className={`w-full pl-9 pr-4 py-3 rounded-2xl border text-sm text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 transition-all duration-300 ${emailError
                       ? 'border-red-500 focus:border-red-400'
-                      : 'border-slate-200 focus:border-sky-500'
+                      : 'border-slate-200 focus:border-orange-500'
                     }`}
                 />
               </div>
@@ -333,7 +337,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                     setForgotError('')
                     setForgotStatus('')
                   }}
-                  className="text-xs text-sky-600 hover:text-sky-500 transition-colors font-bold cursor-pointer bg-transparent border-0"
+                  className="text-xs text-orange-600 hover:text-orange-500 transition-colors font-bold cursor-pointer bg-transparent border-0"
                 >
                   Quên mật khẩu?
                 </button>
@@ -350,9 +354,9 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                     if (passwordError) setPasswordError(false)
                   }}
                   placeholder="Nhập mật khẩu..."
-                  className={`w-full pl-9 pr-11 py-3 rounded-2xl border text-sm text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all duration-300 ${passwordError
+                  className={`w-full pl-9 pr-11 py-3 rounded-2xl border text-sm text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 transition-all duration-300 ${passwordError
                       ? 'border-red-500 focus:border-red-400'
-                      : 'border-slate-200 focus:border-sky-500'
+                      : 'border-slate-200 focus:border-orange-500'
                     }`}
                 />
                 {/* Toggle show/hide password */}
@@ -373,18 +377,18 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4.5 w-4.5 text-sky-600 focus:ring-sky-500/30 border-slate-300 rounded cursor-pointer transition-all"
+                className="h-4.5 w-4.5 text-orange-600 focus:ring-orange-500/30 border-slate-300 rounded cursor-pointer transition-all"
               />
               <label htmlFor="remember_me" className="ml-2.5 block text-xs sm:text-sm text-slate-600 font-bold select-none cursor-pointer">
                 Ghi nhớ đăng nhập
               </label>
             </div>
 
-            {/* Main Sign In button - Gradient Neon Glow */}
+            {/* Main Sign In button - Flame Orange Gradient Glow */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 mt-2 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-blue-700 hover:from-sky-400 hover:via-blue-500 hover:to-blue-600 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-sky-500/10 hover:shadow-sky-500/25 hover:translate-y-[-1px] active:translate-y-[0px] active:scale-[0.99] transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3.5 mt-2 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:via-amber-400 hover:to-orange-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 hover:translate-y-[-1px] active:translate-y-[0px] active:scale-[0.99] transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -421,7 +425,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
             Chưa có tài khoản?{' '}
             <button
               onClick={onSwitchToRegister}
-              className="text-sky-650 hover:text-sky-500 font-extrabold cursor-pointer bg-transparent border-0"
+              className="text-orange-600 hover:text-orange-500 font-extrabold cursor-pointer bg-transparent border-0"
             >
               Đăng ký ngay
             </button>
@@ -445,7 +449,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
         <>
           {/* Reset password card screen */}
           <div className="text-center mb-8 relative">
-            <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-blue-900 via-blue-800 to-sky-600 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-stone-900 via-orange-700 to-orange-500 bg-clip-text text-transparent">
               Đặt lại mật khẩu
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-2 font-semibold">
@@ -485,7 +489,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value.replace(/[<>]/g, ''))}
                     placeholder="Nhập email..."
-                    className="w-full pl-9 pr-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all duration-300"
+                    className="w-full pl-9 pr-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                   />
                 </div>
               </div>
@@ -493,7 +497,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
               <button
                 type="submit"
                 disabled={isForgotLoading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isForgotLoading ? (
                   <>
@@ -519,7 +523,7 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="Nhập mã OTP..."
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 text-center font-bold tracking-widest bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all duration-300"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 text-center font-bold tracking-widest bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
 
@@ -534,14 +538,14 @@ function Login({ onLoginSuccess, onSwitchToRegister, backendUrl, onOpenServerCon
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Tối thiểu 6 ký tự..."
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all duration-300"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isForgotLoading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:to-amber-500 text-white font-extrabold text-sm tracking-wide transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isForgotLoading ? (
                   <>

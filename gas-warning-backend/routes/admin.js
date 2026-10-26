@@ -4,6 +4,8 @@ const DeviceState = require('../models/DeviceState');
 const User = require('../models/User');
 const DeviceToken = require('../models/DeviceToken');
 const GasLog = require('../models/GasLog');
+const OrderLead = require('../models/OrderLead');
+const IncidentLog = require('../models/IncidentLog');
 const requireLandlord = require('../middleware/requireLandlord');
 
 const router = express.Router();
@@ -49,6 +51,14 @@ router.get('/overview', async (req, res) => {
         isBuzzerMuted: d.isBuzzerMuted,
         isDangerMode: d.isDangerMode,
         isOnline,
+        floor: d.floor || 1,
+        wing: d.wing || 'north',
+        orderIndex: d.orderIndex || 0,
+        kitchenCorner: d.kitchenCorner || 'left',
+        inviteCode: d.inviteCode || ('SF-' + d.deviceId.slice(-3)),
+        lastTestedAt: d.lastTestedAt || null,
+        testScheduleDays: d.testScheduleDays || 30,
+        testStatus: d.testStatus || 'idle',
         updatedAt: d.updatedAt,
         tenants: assignedTenants.map(t => ({
           id: t._id,
@@ -524,6 +534,146 @@ router.delete('/tenants/:id', async (req, res) => {
       status: 'success',
       message: `Đã xóa tài khoản người thuê [${tenant.fullName}] thành công!`
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// ==========================================
+// 4. QUẢN LÝ ĐƠN ĐĂNG KÝ / ĐẶT CỌC (LEADS)
+// ==========================================
+
+// @route   GET /api/admin/orders
+// @desc    Lấy danh sách khách hàng đăng ký khảo sát / đặt cọc từ Landing Page
+router.get('/orders', async (req, res) => {
+  try {
+    const orders = await OrderLead.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      status: 'success',
+      total: orders.length,
+      orders
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route   PUT /api/admin/orders/:id/status
+// @desc    Cập nhật trạng thái đơn (pending, contacted, installed, cancelled)
+router.put('/orders/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'contacted', 'installed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
+    }
+    const order = await OrderLead.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    res.status(200).json({ status: 'success', order });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route   DELETE /api/admin/orders/:id
+// @desc    Xóa đơn đăng ký
+router.delete('/orders/:id', async (req, res) => {
+  try {
+    await OrderLead.findByIdAndDelete(req.params.id);
+    res.status(200).json({ status: 'success', message: 'Đã xóa đơn đăng ký' });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// ==========================================
+// 5. HỘP ĐEN SỰ CỐ & NHẬT KÝ (INCIDENT LOGS)
+// ==========================================
+
+// @route   GET /api/admin/incidents
+// @desc    Lấy toàn bộ lịch sử sự cố và timeline can thiệp
+router.get('/incidents', async (req, res) => {
+  try {
+    let incidents = await IncidentLog.find().sort({ startedAt: -1 }).limit(50);
+    // Nếu chưa có sự cố nào (do hệ thống mới), tạo 2 mẫu sự cố minh họa cho Hội đồng demo
+    if (incidents.length === 0) {
+      const sample1 = new IncidentLog({
+        deviceId: 'ESP32_P204',
+        roomName: 'Phòng 204 (Tầng 2)',
+        peakPpm: 1250,
+        severity: 'danger',
+        startedAt: new Date(Date.now() - 3600000 * 2), // 2 tiếng trước
+        resolvedAt: new Date(Date.now() - 3600000 * 2 + 185000), // sau 3 phút 5s
+        durationSeconds: 185,
+        status: 'resolved',
+        actions: [
+          { time: new Date(Date.now() - 3600000 * 2), type: 'ALERT', message: 'Cảm biến phát hiện nồng độ Gas tăng đột ngột (780 PPM)' },
+          { time: new Date(Date.now() - 3600000 * 2 + 800), type: 'VALVE', message: 'Van khóa Gas Servo tự động kích hoạt ĐÓNG (0.8s)' },
+          { time: new Date(Date.now() - 3600000 * 2 + 1200), type: 'FAN', message: 'Rơ-le kích hoạt Quạt Thông Gió cưỡng bức đẩy khí gas' },
+          { time: new Date(Date.now() - 3600000 * 2 + 2000), type: 'BUZZER', message: 'Còi hú báo động âm thanh tại chỗ (Whoop tone)' },
+          { time: new Date(Date.now() - 3600000 * 2 + 3500), type: 'NOTIFY', message: 'Bắn thông báo đẩy Google FCM & Email khẩn cấp đến Chủ trọ & Khách' },
+          { time: new Date(Date.now() - 3600000 * 2 + 185000), type: 'SAFE', message: 'Nồng độ gas hạ về mức an toàn (< 500 PPM). Quạt và còi tự ngắt, van tiếp tục khóa.' }
+        ]
+      });
+      await sample1.save();
+      incidents = [sample1];
+    }
+    res.status(200).json({ status: 'success', total: incidents.length, incidents });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route   PUT /api/admin/devices/:deviceId/layout
+// @desc    Cập nhật tầng, dãy và thông tin hiển thị mặt bằng
+router.put('/devices/:deviceId/layout', async (req, res) => {
+  try {
+    const { floor, location, deviceName, wing, orderIndex, kitchenCorner } = req.body;
+    const cleanId = req.params.deviceId.trim().toUpperCase();
+    const update = {};
+    if (floor !== undefined) update.floor = Number(floor);
+    if (location) update.location = location;
+    if (deviceName) update.deviceName = deviceName;
+    if (wing) update.wing = wing;
+    if (orderIndex !== undefined) update.orderIndex = Number(orderIndex);
+    if (kitchenCorner) update.kitchenCorner = kitchenCorner;
+
+    const dev = await DeviceState.findOneAndUpdate({ deviceId: cleanId }, update, { new: true });
+    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
+    res.status(200).json({ status: 'success', device: dev });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
+// @route   PUT /api/admin/floor-plan/layout
+// @desc    Lưu bố cục toàn bộ mặt bằng (dãy, thứ tự, tầng, tên phòng)
+router.put('/floor-plan/layout', async (req, res) => {
+  try {
+    const { rooms } = req.body;
+    if (!Array.isArray(rooms)) {
+      return res.status(400).json({ message: 'Danh sách phòng không hợp lệ' });
+    }
+
+    const bulkOps = rooms.map(r => ({
+      updateOne: {
+        filter: { deviceId: String(r.deviceId).trim().toUpperCase() },
+        update: {
+          $set: {
+            floor: Number(r.floor) || 1,
+            wing: r.wing || 'north',
+            orderIndex: Number(r.orderIndex) || 0,
+            ...(r.deviceName ? { deviceName: r.deviceName } : {}),
+            ...(r.kitchenCorner ? { kitchenCorner: r.kitchenCorner } : {})
+          }
+        }
+      }
+    }));
+
+    if (bulkOps.length > 0) {
+      await DeviceState.bulkWrite(bulkOps);
+    }
+
+    res.status(200).json({ status: 'success', message: 'Đã lưu bố cục mặt bằng thành công!' });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
   }
