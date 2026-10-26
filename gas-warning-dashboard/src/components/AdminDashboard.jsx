@@ -36,21 +36,12 @@ import {
   Share2,
   Smartphone,
   Monitor,
-  ClipboardList,
-  FileText,
   MapPin,
-  Layers,
   Send
 } from 'lucide-react'
-import FloorPlanModal from './FloorPlanModal'
-import IncidentBlackboxModal from './IncidentBlackboxModal'
 
 export default function AdminDashboard({ currentUser, token, backendUrl, onSwitchToMonitor, onRefreshDevices }) {
-  const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'tenants' | 'orders' | 'traffic'
-  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false)
-  const [isBlackboxOpen, setIsBlackboxOpen] = useState(false)
-  const [orders, setOrders] = useState([])
-  const [isOrdersLoading, setIsOrdersLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'tenants' | 'traffic'
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [stats, setStats] = useState({ totalRooms: 0, onlineRooms: 0, dangerRooms: 0, totalTenants: 0 })
@@ -126,63 +117,9 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
     }
   }
 
-  // Tải danh sách đơn đăng ký khảo sát từ Landing Page
-  const fetchOrders = async () => {
-    setIsOrdersLoading(true)
-    try {
-      const res = await fetch(`${backendUrl}/admin/orders`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setOrders(data.orders || [])
-      }
-    } catch (err) {
-      console.warn('Lỗi tải orders:', err)
-    } finally {
-      setIsOrdersLoading(false)
-    }
-  }
-
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
-    try {
-      const res = await fetch(`${backendUrl}/admin/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-      if (res.ok) {
-        toast.success('Cập nhật trạng thái thành công!')
-        fetchOrders()
-      }
-    } catch (err) {
-      toast.error('Lỗi cập nhật đơn hàng')
-    }
-  }
-
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa đơn đăng ký này?')) return
-    try {
-      const res = await fetch(`${backendUrl}/admin/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (res.ok) {
-        toast.success('Đã xóa đơn đăng ký')
-        fetchOrders()
-      }
-    } catch (err) {
-      toast.error('Lỗi xóa đơn')
-    }
-  }
-
   useEffect(() => {
     fetchOverviewData()
     fetchAnalytics()
-    fetchOrders()
   }, [backendUrl, token])
 
   const handleCopyLink = (url, key) => {
@@ -553,17 +490,6 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
             <span>Người Thuê ({tenants.length})</span>
           </button>
           <button
-            onClick={() => { setActiveTab('orders'); fetchOrders(); }}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-              activeTab === 'orders'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span>Đơn Đăng Ký ({orders.length})</span>
-          </button>
-          <button
             onClick={() => { setActiveTab('traffic'); fetchAnalytics(); }}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               activeTab === 'traffic'
@@ -573,25 +499,6 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
           >
             <BarChart2 className="w-4 h-4" />
             <span>Chiến Dịch ({analytics.totalClicks})</span>
-          </button>
-        </div>
-
-        {/* Global Action Buttons: Sơ đồ mặt bằng 2D & Hộp Đen Sự Cố */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setIsFloorPlanOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
-          >
-            <Layers className="w-4 h-4 text-orange-600" />
-            <span>Sơ Đồ Mặt Bằng 2D</span>
-          </button>
-
-          <button
-            onClick={() => setIsBlackboxOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
-          >
-            <FileText className="w-4 h-4 text-orange-400" />
-            <span>Hộp Đen Sự Cố PCCC</span>
           </button>
         </div>
 
@@ -1135,141 +1042,7 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
         </div>
       )}
 
-      {/* TAB 4: QUẢN LÝ ĐƠN ĐĂNG KÝ KHẢO SÁT & ĐẶT CỌC (LEADS TỪ LANDING PAGE) */}
-      {activeTab === 'orders' && (
-        <div className="space-y-6 animate-fade-slide">
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-3">
-              <div>
-                <h4 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-orange-600" />
-                  Danh Sách Khách Hàng Đăng Ký Khảo Sát & Lắp Đặt
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Thu thập từ Công cụ Tính Dự Toán và Form Đăng Ký trên Landing Page SafeFlame
-                </p>
-              </div>
 
-              <button
-                onClick={fetchOrders}
-                disabled={isOrdersLoading}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isOrdersLoading ? 'animate-spin' : ''}`} />
-                <span>Cập nhật</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-200/80 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                    <th className="py-3 px-4">Khách Hàng</th>
-                    <th className="py-3 px-4">Số Điện Thoại & Email</th>
-                    <th className="py-3 px-4">Địa Chỉ Khu Trọ</th>
-                    <th className="py-3 px-4 text-center">Số Phòng & Gói</th>
-                    <th className="py-3 px-4 text-right">Dự Toán Chi Phí</th>
-                    <th className="py-3 px-4 text-center">Trạng Thái</th>
-                    <th className="py-3 px-4 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs text-slate-600">
-                  {orders && orders.length > 0 ? (
-                    orders.map((ord) => (
-                      <tr key={ord._id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-900">
-                          {ord.fullName}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <a href={`tel:${ord.phone}`} className="font-mono font-bold text-orange-600 hover:underline block">
-                            📞 {ord.phone}
-                          </a>
-                          {ord.email && (
-                            <span className="text-[11px] text-slate-400 block truncate max-w-[160px]">
-                              {ord.email}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-xs text-slate-700 max-w-[200px] truncate" title={ord.address}>
-                          {ord.address}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="font-extrabold text-slate-900 block">{ord.roomsCount} phòng</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase inline-block bg-slate-100 text-slate-600">
-                            {ord.packageType === 'basic' ? 'Cơ Bản' : ord.packageType === 'pro' ? 'Tiêu Chuẩn' : 'Tòa Nhà'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900">
-                          {ord.estimatedCost ? ord.estimatedCost.toLocaleString('vi-VN') + ' đ' : 'Chưa định'}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <select
-                            value={ord.status || 'pending'}
-                            onChange={(e) => handleUpdateOrderStatus(ord._id, e.target.value)}
-                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase cursor-pointer border ${
-                              ord.status === 'installed'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : ord.status === 'contacted'
-                                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                : ord.status === 'cancelled'
-                                ? 'bg-slate-100 text-slate-400 border-slate-200'
-                                : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}
-                          >
-                            <option value="pending">Chờ tư vấn</option>
-                            <option value="contacted">Đã liên hệ</option>
-                            <option value="installed">Đã hoàn tất</option>
-                            <option value="cancelled">Đã hủy</option>
-                          </select>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => handleDeleteOrder(ord._id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Xóa đơn"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="py-10 text-center text-slate-400 italic">
-                        Chưa có khách hàng nào đăng ký khảo sát lắp đặt.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL SƠ ĐỒ MẶT BẰNG 2D */}
-      <FloorPlanModal
-        isOpen={isFloorPlanOpen}
-        onClose={() => setIsFloorPlanOpen(false)}
-        devices={devices}
-        currentDeviceId=""
-        userRole="landlord"
-        backendUrl={backendUrl}
-        token={token}
-        onRefreshDevices={fetchOverviewData}
-        onSelectDevice={(id) => {
-          const dev = devices.find(d => d.deviceId === id)
-          if (onSwitchToMonitor) onSwitchToMonitor(id, dev?.deviceName || id)
-        }}
-      />
-
-      {/* MODAL HỘP ĐEN SỰ CỐ PCCC */}
-      <IncidentBlackboxModal
-        isOpen={isBlackboxOpen}
-        onClose={() => setIsBlackboxOpen(false)}
-        backendUrl={backendUrl}
-        token={token}
-      />
 
       {/* MODAL THÊM / SỬA PHÒNG */}
       {isDeviceModalOpen && typeof document !== 'undefined' && createPortal(

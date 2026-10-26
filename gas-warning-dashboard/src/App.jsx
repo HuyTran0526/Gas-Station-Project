@@ -51,8 +51,6 @@ import Register from './components/Register'
 import SoundSettingsModal from './components/SoundSettingsModal'
 import AdminDashboard from './components/AdminDashboard'
 import LandingPage from './components/LandingPage'
-import FloorPlanModal from './components/FloorPlanModal'
-import IncidentBlackboxModal from './components/IncidentBlackboxModal'
 import SelfTestModal from './components/SelfTestModal'
 import InspectionBookingModal from './components/InspectionBookingModal'
 import alarmService from './services/alarmService'
@@ -122,8 +120,6 @@ function App() {
   const [isAdminView, setIsAdminView] = useState(false)
 
   // Modals Tính Năng Mới
-  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false)
-  const [isBlackboxOpen, setIsBlackboxOpen] = useState(false)
   const [isSelfTestOpen, setIsSelfTestOpen] = useState(false)
   const [isInspectionOpen, setIsInspectionOpen] = useState(false)
   const [lastTestedAt, setLastTestedAt] = useState(null)
@@ -1030,26 +1026,6 @@ function App() {
                 <div className="hidden lg:flex items-center gap-1.5 border-l border-slate-200 pl-2">
                   <button
                     type="button"
-                    onClick={() => setIsFloorPlanOpen(true)}
-                    className="px-2.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                    title="Xem sơ đồ 2D mặt bằng toàn khu"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-orange-600" />
-                    <span>Sơ Đồ 2D</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsBlackboxOpen(true)}
-                    className="px-2.5 py-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                    title="Xem hộp đen diễn biến sự cố"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Hộp Đen</span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => setIsSelfTestOpen(true)}
                     className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                     title="Chạy tự kiểm tra van, quạt, còi trong 5 giây"
@@ -1628,64 +1604,10 @@ function App() {
           </div>
 
           {/* Quick Safety Center: Các Card Hành Động Nhanh */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             {currentUser?.role === 'landlord' ? (
               <>
-                {/* Card 1: Sơ Đồ Mặt Bằng 2D (Chủ trọ) */}
-                <div
-                  onClick={() => setIsFloorPlanOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <Layers className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                        Floor Map 2D
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Sơ Đồ Mặt Bằng Nhà Trọ
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Xem trực quan mặt bằng kiến trúc toàn tòa nhà, vị trí bếp, cửa thoát hiểm và các phòng.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Xem Sơ Đồ Mặt Bằng</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 2: Hộp Đen Sự Cố PCCC (Chủ trọ) */}
-                <div
-                  onClick={() => setIsBlackboxOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
-                        Blackbox PCCC
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Hộp Đen Sự Cố & PCCC
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Truy vết từng mili-giây diễn biến rò rỉ, tốc độ tự ngắt van, thông gió và in biên bản sự cố.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Mở Hộp Đen Sự Cố</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 3: Tự Kiểm Tra Định Kỳ 5s */}
+                {/* Card: Tự Kiểm Tra Định Kỳ 5s */}
                 <div
                   onClick={() => setIsSelfTestOpen(true)}
                   className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
@@ -1929,57 +1851,7 @@ function App() {
           <SoundSettingsModal onClose={() => setIsSoundModalOpen(false)} />
         )}
 
-        {/* MODAL SƠ ĐỒ MẶT BẰNG 2D (Chỉ dành cho Chủ Trọ) */}
-        {currentUser?.role === 'landlord' && (
-          <FloorPlanModal
-            isOpen={isFloorPlanOpen}
-            onClose={() => setIsFloorPlanOpen(false)}
-            devices={availableDevices && availableDevices.length > 0 ? availableDevices : [{
-              deviceId: selectedDeviceId,
-              deviceName: currentDeviceName,
-              ppm,
-              isOpen: isValveOpen,
-              isOn: isFanOn,
-              isOnline,
-              floor: 1,
-              isDangerMode
-            }]}
-            currentDeviceId={selectedDeviceId}
-            onSelectDevice={(id) => {
-              setSelectedDeviceId(id)
-              localStorage.setItem('selected_device_id', id)
-              const dev = availableDevices.find(d => d.deviceId === id)
-              if (dev) {
-                setCurrentDeviceName(dev.deviceName)
-                toast.success(`Đang can thiệp phòng: ${dev.deviceName}`)
-              }
-            }}
-            onRefreshDevices={() => {
-              if (token) {
-                fetch(`${backendUrl}/devices`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.json()).then(d => {
-                  if (d.devices) setAvailableDevices(d.devices)
-                }).catch(() => {})
-              }
-            }}
-            userRole="landlord"
-            backendUrl={backendUrl}
-            token={token}
-          />
-        )}
 
-        {/* MODAL HỘP ĐEN SỰ CỐ PCCC (Chỉ dành cho Chủ Trọ) */}
-        {currentUser?.role === 'landlord' && (
-          <IncidentBlackboxModal
-            isOpen={isBlackboxOpen}
-            onClose={() => setIsBlackboxOpen(false)}
-            backendUrl={backendUrl}
-            token={token}
-            deviceId={selectedDeviceId}
-            roomName={currentDeviceName}
-          />
-        )}
 
         {/* MODAL TỰ KIỂM TRA ĐỊNH KỲ 5S (Chỉ dành cho Chủ Trọ / Kỹ thuật viên) */}
         {currentUser?.role === 'landlord' && (
