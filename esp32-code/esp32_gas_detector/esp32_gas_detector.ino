@@ -33,7 +33,7 @@ int baseAdc = 0; // Biến lưu giá trị mặc định của cảm biến tron
 // Biến lưu trạng thái từ Web Dashboard
 bool manualBuzzerMuted = false; // Mặc định KHÔNG tắt còi khi báo động
 bool manualValveOpen = true;    // Mặc định mở van khi an toàn
-bool manualFanOn = true;        // Mặc định cho phép quạt chạy khi báo động
+bool manualFanOn = false;       // Mặc định TẮT quạt khi an toàn (chỉ bật khi có gas hoặc bật từ Dashboard)
 
 bool isDangerMode = false;
 
@@ -129,21 +129,34 @@ void loop() {
   int realAdc = adcValue - baseAdc;
   if (realAdc < 0) realAdc = 0; // Không cho số âm
   
-  int ppmValue = map(realAdc, 0, 4095 - baseAdc, 0, 10000);
+  // Ánh xạ nồng độ thô từ ADC sang PPM (0 - 10000 PPM)
+  int rawPpm = map(realAdc, 0, 4095 - baseAdc, 0, 10000);
 
-  // Khử nhiễu dư âm (Deadzone): 
-  // Hạ xuống mức 50 để vẫn phát hiện được rò rỉ nhẹ, 
-  // đổi lại khi test xong bạn phải chờ vài phút để số từ từ hạ hẳn về 0.
-  if (ppmValue < 50) {
-    ppmValue = 0;
+  // Khử nhiễu dư âm (Deadzone)
+  if (rawPpm < 30) {
+    rawPpm = 0;
   }
+
+  // --- THUẬT TOÁN LÀM MƯỢT NỒNG ĐỘ (EMA SMOOTHING FILTER) ---
+  // Giúp số nhảy mượt mà theo đà tăng/giảm tự nhiên của luồng khí, không bị giật cục
+  static float smoothedPpm = 0.0;
+  if (rawPpm > smoothedPpm) {
+    // Khi có gas: Tăng lướt đều đặn (độ nhạy 18% mỗi chu kỳ)
+    smoothedPpm = (smoothedPpm * 0.82) + (rawPpm * 0.18);
+  } else {
+    // Khi hết gas: Giảm êm ả theo luồng không khí tản ra
+    smoothedPpm = (smoothedPpm * 0.90) + (rawPpm * 0.10);
+  }
+
+  int ppmValue = (int)(smoothedPpm + 0.5);
+  if (ppmValue < 30) ppmValue = 0;
 
   lcd.setCursor(0, 0);
   lcd.print("Gas: ");
   lcd.print(ppmValue);
   lcd.print(" PPM   ");
 
-  // --- CẬP NHẬT NGƯỠNG NGUY HIỂM (600 PPM) ---
+  // --- CẬP NHẬT NGƯỠNG NGUY HIỂM (Đồng bộ chuẩn PCCC & Dashboard) ---
   if (ppmValue >= 600) {
     isDangerMode = true;
   } else if (ppmValue < 500) {
@@ -163,15 +176,10 @@ void loop() {
 
   // --- 2. QUẠT HÚT KHÍ (Relay kích mức LOW = BẬT) ---
   if (isDangerMode) {
-    // Khi NGUY HIỂM: Luôn BẬT quạt hút khí gas khẩn cấp
-    // Chỉ tắt nếu nhận lệnh chủ động tắt từ Dashboard
-    if (manualFanOn == false) {
-      digitalWrite(RELAY_FAN, HIGH); // Nhận lệnh tắt cưỡng bức từ web
-    } else {
-      digitalWrite(RELAY_FAN, LOW);  // TỰ ĐỘNG BẬT QUẠT HÚT KHÍ GAS
-    }
+    // Khi NGUY HIỂM: Luôn TỰ ĐỘNG BẬT quạt hút khí gas khẩn cấp
+    digitalWrite(RELAY_FAN, LOW);
   } else {
-    // Chế độ AN TOÀN: Bật/tắt theo điều khiển Dashboard
+    // Chế độ AN TOÀN: Bật/tắt theo điều khiển Dashboard (Mặc định là TẮT)
     if (manualFanOn) {
       digitalWrite(RELAY_FAN, LOW);
     } else {
@@ -195,11 +203,16 @@ void loop() {
 
   // --- 4. MÀN HÌNH LCD ---
   if (isDangerMode) {
-    lcd.setCursor(0, 1);
-    lcd.print("GAS ALERT!     ");
+    if (ppmValue >= 2000) {
+      lcd.setCursor(0, 1);
+      lcd.print("DANGER: >10% LEL"); // Đạt ngưỡng 10% LEL theo tiêu chuẩn PCCC
+    } else {
+      lcd.setCursor(0, 1);
+      lcd.print("GAS ALERT!      ");
+    }
   } else {
     lcd.setCursor(0, 1);
-    lcd.print("SAFE           ");
+    lcd.print("SAFE            ");
   }
 
   // =========================================================================

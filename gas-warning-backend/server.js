@@ -30,11 +30,28 @@ async function connectToDatabase() {
     return cachedDb;
   }
   console.log('🔄 Đang khởi tạo kết nối MongoDB...');
-  cachedDb = await mongoose.connect(MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000, // Thử tối đa 5 giây
-    socketTimeoutMS: 45000,
-  });
-  console.log('✅ Kết nối cơ sở dữ liệu MongoDB thành công!');
+  try {
+    cachedDb = await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Thử tối đa 5 giây
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ Kết nối cơ sở dữ liệu MongoDB thành công!');
+  } catch (dbErr) {
+    // Nếu kết nối Cloud Atlas thất bại (ví dụ do chặn IP Whitelist), tự động dự phòng sang MongoDB Local
+    if (!MONGODB_URI.includes('127.0.0.1') && !MONGODB_URI.includes('localhost')) {
+      console.warn('⚠️ Kết nối Cloud MongoDB Atlas thất bại (do chặn IP). Đang tự động kết nối sang MongoDB Local (127.0.0.1:27017)...');
+      try {
+        cachedDb = await mongoose.connect('mongodb://127.0.0.1:27017/gas_warning_db', {
+          serverSelectionTimeoutMS: 3000,
+        });
+        console.log('✅ Kết nối dự phòng MongoDB Local thành công!');
+      } catch (localErr) {
+        throw dbErr;
+      }
+    } else {
+      throw dbErr;
+    }
+  }
   initializeDeviceState();
   initializeDefaultLandlord();
   return cachedDb;
@@ -272,7 +289,7 @@ async function initializeDeviceState() {
 
 async function initializeDefaultLandlord() {
   try {
-    const landlord = await User.findOne({ role: 'landlord' });
+    const landlord = await User.findOne({ email: 'admin@safeflame.vn' });
     if (!landlord) {
       const bcrypt = require('bcryptjs');
       const salt = await bcrypt.genSalt(10);

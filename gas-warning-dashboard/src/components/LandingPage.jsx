@@ -41,11 +41,14 @@ import {
   Send,
   DollarSign,
   Award,
-  Layers
+  Layers,
+  GitBranch,
+  Download
 } from 'lucide-react'
 import logoImg from '../assets/logo.jpg'
 import logoIconImg from '../assets/logo-icon.png'
 import posterImg from '../assets/safe-flame-poster.png'
+import workflowImg from '../assets/so-do-hoat-dong.jpg'
 import BrandLogo from './BrandLogo'
 
 export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, backendUrl }) {
@@ -53,6 +56,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
   const [demoState, setDemoState] = useState('safe') // 'safe' | 'warning' | 'danger'
   const [openFaq, setOpenFaq] = useState(null)
   const [isPosterModalOpen, setIsPosterModalOpen] = useState(false)
+  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false)
   const [copiedField, setCopiedField] = useState(null)
 
   // Trạng thái Công Cụ Tính Dự Toán & Form Đặt Cọc
@@ -190,6 +194,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
             <a href="#features" className="hover:text-orange-400 transition-colors">Tính Năng Cốt Lõi</a>
             <a href="#how-it-works" className="hover:text-orange-400 transition-colors">4 Tầng Bảo Vệ</a>
             <a href="#solutions" className="hover:text-orange-400 transition-colors">Giải Pháp Trọ</a>
+            <a href="#workflow" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Sơ Đồ Hoạt Động</span>
+            </a>
             <a href="#calculator" className="hover:text-orange-400 transition-colors flex items-center gap-1 text-orange-400 font-bold">
               <Calculator className="w-3.5 h-3.5" />
               <span>Dự Toán Chi Phí</span>
@@ -253,7 +261,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
       <section className="relative pt-10 pb-16 lg:pt-16 lg:pb-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
+
             {/* Left Column: Headline & Value Prop */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               {/* Badge */}
@@ -333,6 +341,14 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                     <Eye className="w-3.5 h-3.5 text-orange-400" />
                     <span>Xem Poster Gốc</span>
                   </button>
+
+                  <button
+                    onClick={() => setIsWorkflowModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-cyan-500/40 bg-stone-900/90 hover:bg-cyan-500/20 text-cyan-300 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                  >
+                    <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Xem Sơ Đồ Hoạt Động</span>
+                  </button>
                 </div>
               </div>
 
@@ -356,7 +372,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
             {/* Right Column: INTERACTIVE HERO DEMO WIDGET IN FLAME TONE */}
             <div className="lg:col-span-5">
               <div className="p-6 sm:p-7 rounded-3xl bg-stone-900/90 border border-orange-500/25 shadow-2xl shadow-orange-950/40 backdrop-blur-xl relative space-y-6">
-                
+
                 {/* Header widget */}
                 <div className="flex items-center justify-between border-b border-stone-800 pb-4">
                   <div className="flex items-center gap-2.5">
@@ -383,33 +399,30 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                     <button
                       type="button"
                       onClick={() => setDemoState('safe')}
-                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        demoState === 'safe'
+                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${demoState === 'safe'
                           ? 'bg-emerald-500 text-stone-950 border-emerald-400 shadow-md shadow-emerald-500/20'
                           : 'bg-stone-800/60 hover:bg-stone-800 border-stone-700 text-stone-300'
-                      }`}
+                        }`}
                     >
                       🟢 An Toàn
                     </button>
                     <button
                       type="button"
                       onClick={() => setDemoState('warning')}
-                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        demoState === 'warning'
+                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${demoState === 'warning'
                           ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-md shadow-amber-500/20 font-black'
                           : 'bg-stone-800/60 hover:bg-stone-800 border-stone-700 text-stone-300'
-                      }`}
+                        }`}
                     >
                       🟡 Cảnh Giác
                     </button>
                     <button
                       type="button"
                       onClick={() => setDemoState('danger')}
-                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        demoState === 'danger'
+                      className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${demoState === 'danger'
                           ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white border-red-500 shadow-lg shadow-red-600/30 animate-pulse font-black'
                           : 'bg-stone-800/60 hover:bg-stone-800 border-stone-700 text-stone-300'
-                      }`}
+                        }`}
                     >
                       🚨 Rò Rỉ Gas!
                     </button>
@@ -448,9 +461,8 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                 {/* 3 Hardware Devices Status */}
                 <div className="grid grid-cols-3 gap-2.5">
                   {/* Van gas */}
-                  <div className={`p-3 rounded-xl border transition-all text-center ${
-                    currentCfg.valveOpen ? 'bg-stone-900/60 border-stone-800' : 'bg-red-950/40 border-red-500/60 text-red-200'
-                  }`}>
+                  <div className={`p-3 rounded-xl border transition-all text-center ${currentCfg.valveOpen ? 'bg-stone-900/60 border-stone-800' : 'bg-red-950/40 border-red-500/60 text-red-200'
+                    }`}>
                     <div className="flex justify-center mb-1.5">
                       {currentCfg.valveOpen ? (
                         <Unlock className="w-5 h-5 text-emerald-400" />
@@ -465,9 +477,8 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   </div>
 
                   {/* Quạt hút */}
-                  <div className={`p-3 rounded-xl border transition-all text-center ${
-                    currentCfg.fanOn ? 'bg-orange-950/40 border-orange-500/60 text-orange-200' : 'bg-stone-900/60 border-stone-800'
-                  }`}>
+                  <div className={`p-3 rounded-xl border transition-all text-center ${currentCfg.fanOn ? 'bg-orange-950/40 border-orange-500/60 text-orange-200' : 'bg-stone-900/60 border-stone-800'
+                    }`}>
                     <div className="flex justify-center mb-1.5">
                       <Fan className={`w-5 h-5 text-orange-400 ${currentCfg.fanOn ? 'animate-spin' : ''}`} />
                     </div>
@@ -478,9 +489,8 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   </div>
 
                   {/* Còi báo */}
-                  <div className={`p-3 rounded-xl border transition-all text-center ${
-                    currentCfg.buzzerActive ? 'bg-red-950/40 border-red-500/60 text-red-200 animate-pulse' : 'bg-stone-900/60 border-stone-800'
-                  }`}>
+                  <div className={`p-3 rounded-xl border transition-all text-center ${currentCfg.buzzerActive ? 'bg-red-950/40 border-red-500/60 text-red-200 animate-pulse' : 'bg-stone-900/60 border-stone-800'
+                    }`}>
                     <div className="flex justify-center mb-1.5">
                       {currentCfg.buzzerActive ? (
                         <Volume2 className="w-5 h-5 text-red-400 animate-bounce" />
@@ -517,7 +527,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
       {/* ========================================================================= */}
       <section id="hardware" className="py-20 bg-gradient-to-b from-[#0f0c09] via-stone-950 to-[#0b0907] border-y border-orange-500/20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-extrabold uppercase tracking-wider">
@@ -533,10 +543,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            
+
             {/* Left: Interactive Poster / Product Showcase with Glow Frame */}
             <div className="lg:col-span-5 flex flex-col items-center">
-              <div 
+              <div
                 onClick={() => setIsPosterModalOpen(true)}
                 className="group relative max-w-sm rounded-3xl p-3 bg-gradient-to-b from-orange-500/30 via-stone-850 to-stone-900 border border-orange-500/40 shadow-2xl shadow-orange-950/60 cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-orange-400"
                 title="Nhấn để phóng to ảnh poster đầy đủ"
@@ -589,7 +599,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
 
             {/* Right: The 4 Core Product Pillars (from Poster) */}
             <div className="lg:col-span-7 space-y-6">
-              
+
               <div className="space-y-2">
                 <span className="text-xs font-black uppercase tracking-widest text-orange-400 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-orange-500" />
@@ -605,7 +615,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
 
               {/* 4 Poster Feature Points with Visual Accent Line */}
               <div className="space-y-4 relative pl-4 sm:pl-6 before:content-[''] before:absolute before:left-1 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-orange-500 before:via-amber-500 before:to-orange-600">
-                
+
                 {/* Feature 1 */}
                 <div className="p-4 rounded-2xl bg-stone-900/80 border border-stone-800 hover:border-orange-500/40 transition-all space-y-1">
                   <div className="flex items-center gap-2.5">
@@ -920,6 +930,205 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
               </button>
             </div>
           </div>
+
+          {/* Quick link banner to Workflow Diagram */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-stone-900 to-cyan-950/40 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center shrink-0">
+                <GitBranch className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-white">Bạn muốn tìm hiểu chi tiết sơ đồ vận hành cảm biến?</h4>
+                <p className="text-xs text-stone-300">Xem sơ đồ khối quy trình xử lý rò rỉ khí gas cho Quản Lý Dãy Trọ & Hộ Gia Đình.</p>
+              </div>
+            </div>
+            <a
+              href="#workflow"
+              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-stone-950 font-extrabold text-xs transition-all shadow-md flex items-center gap-1.5 shrink-0"
+            >
+              <span>Xem Sơ Đồ Quy Trình</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 6.1. SECTION: SƠ ĐỒ HOẠT ĐỘNG CẢM BIẾN RÒ RỈ KHÍ GAS (QUY TRÌNH VẬN HÀNH) */}
+      {/* ========================================================================= */}
+      <section id="workflow" className="py-20 bg-gradient-to-b from-stone-950 via-[#0a0d14] to-[#0b0907] border-t border-cyan-500/20 relative overflow-hidden">
+        {/* Glow ambient background */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[650px] h-[350px] bg-gradient-to-r from-blue-600/10 via-cyan-500/10 to-emerald-600/10 blur-[140px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
+
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-extrabold uppercase tracking-wider">
+              <GitBranch className="w-4 h-4 text-cyan-400" />
+              <span>Quy Trình Hoạt Động Thông Minh</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white">
+              Sơ Đồ Hoạt Động Cảm Biến Rò Rỉ Khí Gas Safe Flame
+            </h2>
+            <p className="text-sm sm:text-base text-stone-300">
+              Minh họa trực quan quy trình vận hành khép kín, phân tầng phản ứng tự động và cơ chế cảnh báo được tối ưu hóa cho hai mô hình thực tế: Quản Lý Dãy Trọ và Hộ Gia Đình.
+            </p>
+          </div>
+
+          {/* Main Grid: Left is Image card with interactive hover zoom; Right is breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+
+            {/* Left: Image Card */}
+            <div className="lg:col-span-6 flex flex-col items-center">
+              <div
+                onClick={() => setIsWorkflowModalOpen(true)}
+                className="group relative max-w-md w-full rounded-3xl p-3 sm:p-4 bg-gradient-to-b from-cyan-500/30 via-stone-900 to-stone-950 border border-cyan-500/40 shadow-2xl shadow-cyan-950/60 cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-cyan-400"
+                title="Nhấn để phóng to xem toàn bộ sơ đồ"
+              >
+                {/* Ambient backglow */}
+                <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/20 via-transparent to-transparent pointer-events-none" />
+
+                {/* Badge top */}
+                <div className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-950/90 border border-cyan-500/40 text-[11px] font-black text-cyan-300 backdrop-blur-md shadow-md">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Sơ Đồ Chuẩn 2 Phân Hệ</span>
+                </div>
+
+                {/* Zoom overlay on hover */}
+                <div className="absolute inset-0 z-20 bg-stone-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2.5 text-white font-bold backdrop-blur-[2px]">
+                  <div className="p-3.5 rounded-full bg-cyan-500 text-stone-950 shadow-lg shadow-cyan-500/40">
+                    <Maximize2 className="w-6 h-6" />
+                  </div>
+                  <span className="text-sm bg-stone-900/90 px-4 py-1.5 rounded-full border border-cyan-500/40 text-cyan-200 shadow-md">
+                    Phóng to sơ đồ chi tiết
+                  </span>
+                </div>
+
+                {/* The Diagram Image */}
+                <div className="rounded-2xl overflow-hidden bg-white/95 border border-stone-800 p-1 flex justify-center">
+                  <img
+                    src={workflowImg}
+                    alt="Sơ đồ hoạt động cảm biến rò rỉ khí gas Safe Flame dành cho quản lý dãy trọ và hộ gia đình"
+                    className="w-full h-auto object-contain max-h-[620px] rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                </div>
+
+                {/* Quick Caption Under Image */}
+                <div className="mt-3.5 flex items-center justify-between px-2 text-xs">
+                  <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Dãy Trọ & Hộ Gia Đình</span>
+                  </span>
+                  <span className="text-stone-400 text-[11px] flex items-center gap-1">
+                    <Eye className="w-3 h-3 text-cyan-400" />
+                    <span>Click xem ảnh gốc</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Action buttons below image */}
+              <div className="flex items-center gap-3 mt-4 flex-wrap justify-center">
+                <button
+                  type="button"
+                  onClick={() => setIsWorkflowModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Phóng To Xem Toàn Màn Hình</span>
+                </button>
+                <a
+                  href={workflowImg}
+                  download="so-do-hoat-dong-safeflame.jpg"
+                  className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 hover:text-white text-xs font-bold border border-stone-700 transition-colors flex items-center gap-1.5 shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Tải Sơ Đồ Về Máy</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Right: Detailed Step-by-Step Breakdown matching the Infographic */}
+            <div className="lg:col-span-6 space-y-6">
+
+              {/* Sub-card 1: Dãy trọ */}
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-950/40 via-stone-900 to-stone-900/90 border border-blue-500/30 space-y-4 hover:border-blue-400/50 transition-all shadow-lg">
+                <div className="flex items-center justify-between pb-3 border-b border-blue-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center font-black">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-white">Phân Hệ Quản Lý Dãy Trọ</h3>
+                      <p className="text-xs text-blue-300 font-semibold">Giám sát nhiều phòng • Cảnh báo tập trung • Quản lý từ xa</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[11px] font-black">
+                    Multi-Room
+                  </span>
+                </div>
+
+                <div className="space-y-3 text-xs sm:text-sm text-stone-300">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <span><b>Đăng nhập & Đồng bộ dữ liệu:</b> Ban quản lý đăng nhập hệ thống, kết nối dữ liệu từ cảm biến MQ-2 tại từng phòng trọ.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <span><b>Giám sát liên tục theo thời gian thực:</b> Theo dõi trạng thái khí gas của tất cả các phòng trọ song song.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <span><b>Kích hoạt cảnh báo đa kênh:</b> Gửi cảnh báo tức thì qua Website + App + Thông báo đẩy, xác định chính xác vị trí phòng xảy ra sự cố.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                    <span><b>Xử lý & Lưu vết sự cố:</b> Thông báo trực tiếp cho người thuê, xem chi tiết nồng độ/thời gian, hướng dẫn xử lý an toàn và lưu nhật ký.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sub-card 2: Hộ gia đình */}
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-stone-900 to-stone-900/90 border border-emerald-500/30 space-y-4 hover:border-emerald-400/50 transition-all shadow-lg">
+                <div className="flex items-center justify-between pb-3 border-b border-emerald-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-black">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-white">Phân Hệ Hộ Gia Đình</h3>
+                      <p className="text-xs text-emerald-300 font-semibold">Theo dõi 1 khu vực • Cảnh báo tức thời • Dễ sử dụng</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
+                    Single Family
+                  </span>
+                </div>
+
+                <div className="space-y-3 text-xs sm:text-sm text-stone-300">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <span><b>Cài đặt đơn giản, cắm là chạy:</b> Đăng nhập tài khoản gia đình, kết nối cảm biến tại khu vực bếp nấu/bình gas.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <span><b>Giám sát nồng độ gas không gian:</b> Liên tục đo lường và hiển thị trạng thái an toàn trên màn hình LCD và ứng dụng di động.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <span><b>Cảnh báo tức thời & Chỉ dẫn xử lý:</b> Phát còi hú, gửi thông báo điện thoại kèm hướng dẫn cụ thể (mở cửa thông gió, khóa bình gas).</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                    <span><b>Xác nhận an toàn & Tự động lặp lại:</b> Sau khi xử lý an toàn, hệ thống tự động quay lại chế độ giám sát thường trực.</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
       </section>
 
@@ -928,7 +1137,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
       {/* ========================================================================= */}
       <section id="calculator" className="py-20 bg-gradient-to-b from-[#0b0907] via-stone-950 to-[#0c0907] border-t border-orange-500/25 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-black uppercase tracking-wider">
               <Calculator className="w-3.5 h-3.5" />
@@ -945,7 +1154,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left 7 Columns: Interactive Controls */}
             <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-stone-900/90 border border-orange-500/30 space-y-7 shadow-xl shadow-orange-950/30">
-              
+
               {/* Slider: Số lượng phòng */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -974,11 +1183,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                       key={cnt}
                       type="button"
                       onClick={() => setCalcRooms(cnt)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                        calcRooms === cnt
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${calcRooms === cnt
                           ? 'bg-orange-500 text-stone-950 font-black'
                           : 'bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-750'
-                      }`}
+                        }`}
                     >
                       {cnt} phòng
                     </button>
@@ -996,11 +1204,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   {/* Gói Cơ Bản */}
                   <div
                     onClick={() => setCalcPackage('basic')}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${
-                      calcPackage === 'basic'
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${calcPackage === 'basic'
                         ? 'bg-orange-500/15 border-orange-500 shadow-md ring-1 ring-orange-500/30 text-white'
                         : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-orange-500/40'
-                    }`}
+                      }`}
                   >
                     <div>
                       <h4 className="font-extrabold text-xs sm:text-sm text-white mb-1">Gói Cơ Bản</h4>
@@ -1017,11 +1224,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   {/* Gói Tiêu Chuẩn - Best Value */}
                   <div
                     onClick={() => setCalcPackage('pro')}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${
-                      calcPackage === 'pro'
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${calcPackage === 'pro'
                         ? 'bg-gradient-to-b from-orange-500/20 to-amber-500/10 border-orange-400 shadow-lg ring-2 ring-orange-500/40 text-white'
                         : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-orange-500/40'
-                    }`}
+                      }`}
                   >
                     <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-stone-950 text-[9px] font-black uppercase">
                       Khuyên Dùng ⭐
@@ -1041,11 +1247,10 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   {/* Gói Tòa Nhà */}
                   <div
                     onClick={() => setCalcPackage('building')}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${
-                      calcPackage === 'building'
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${calcPackage === 'building'
                         ? 'bg-orange-500/15 border-orange-500 shadow-md ring-1 ring-orange-500/30 text-white'
                         : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-orange-500/40'
-                    }`}
+                      }`}
                   >
                     <div>
                       <h4 className="font-extrabold text-xs sm:text-sm text-white mb-1">Gói Tòa Nhà</h4>
@@ -1170,7 +1375,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
       {/* ========================================================================= */}
       <section id="contact" className="py-16 bg-[#0c0907] border-t border-orange-500/20 relative">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          
+
           <div className="text-center space-y-2">
             <span className="text-xs font-black uppercase tracking-widest text-orange-400">
               Kênh Trao Đổi & Hỗ Trợ Kỹ Thuật
@@ -1184,7 +1389,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             {/* Phone & Email Card */}
             <div className="p-6 sm:p-8 rounded-3xl bg-stone-900/90 border border-orange-500/30 space-y-5">
               <div className="flex items-center gap-3 border-b border-stone-800 pb-4">
@@ -1457,6 +1662,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
               </svg>
               <span>TikTok</span>
             </a>
+            <a href="#workflow" className="hover:text-cyan-400 transition-colors">Sơ Đồ Hoạt Động</a>
             <button onClick={onGoToDemo} className="hover:text-white transition-colors cursor-pointer">Live Demo</button>
             <button onClick={onGoToLogin} className="hover:text-white transition-colors cursor-pointer">Đăng Nhập</button>
             <button onClick={onGoToRegister} className="hover:text-white transition-colors cursor-pointer">Đăng Ký</button>
@@ -1468,11 +1674,11 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
       {/* 11. POSTER LIGHTBOX MODAL                                                 */}
       {/* ========================================================================= */}
       {isPosterModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-slide"
           onClick={() => setIsPosterModalOpen(false)}
         >
-          <div 
+          <div
             className="relative max-w-lg w-full max-h-[92vh] flex flex-col items-center bg-stone-900 border border-orange-500/40 rounded-3xl p-3 sm:p-4 shadow-2xl shadow-orange-950/80 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1518,6 +1724,69 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   type="button"
                   onClick={() => setIsPosterModalOpen(false)}
                   className="px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-stone-950 font-black transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 11.5. WORKFLOW DIAGRAM LIGHTBOX MODAL                                     */}
+      {/* ========================================================================= */}
+      {isWorkflowModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fade-slide"
+          onClick={() => setIsWorkflowModalOpen(false)}
+        >
+          <div
+            className="relative max-w-4xl w-full max-h-[95vh] flex flex-col items-center bg-stone-900 border border-cyan-500/40 rounded-3xl p-3 sm:p-4 shadow-2xl shadow-cyan-950/80 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header bar */}
+            <div className="w-full flex items-center justify-between pb-3 px-2 border-b border-stone-800">
+              <div className="flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs sm:text-sm font-black text-white">Sơ Đồ Hoạt Động Cảm Biến Rò Rỉ Khí Gas Safe Flame</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWorkflowModalOpen(false)}
+                className="p-1.5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Diagram image full view */}
+            <div className="w-full overflow-y-auto py-2 flex justify-center bg-stone-950/40 rounded-xl my-1">
+              <img
+                src={workflowImg}
+                alt="Sơ đồ hoạt động chi tiết cảm biến rò rỉ khí gas"
+                className="max-h-[76vh] w-auto rounded-xl object-contain shadow-md"
+              />
+            </div>
+
+            {/* Modal footer */}
+            <div className="w-full pt-3 px-2 border-t border-stone-800 flex items-center justify-between gap-3 text-xs">
+              <span className="text-stone-400 text-[11px] sm:text-xs">
+                Safe Flame • Quản Lý Dãy Trọ & Hộ Gia Đình
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={workflowImg}
+                  download="so-do-hoat-dong-safeflame.jpg"
+                  className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/30 transition-colors flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Tải Sơ Đồ</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsWorkflowModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-stone-950 font-black transition-colors cursor-pointer"
                 >
                   Đóng
                 </button>

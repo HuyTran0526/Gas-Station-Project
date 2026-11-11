@@ -65,18 +65,21 @@ const CLOUD_BACKEND_URL = 'https://gas-station-project.onrender.com/api'
 if (typeof window !== 'undefined' && window.localStorage) {
   try {
     localStorage.removeItem('custom_backend_url')
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function App() {
   const backendUrl = (() => {
+    if (import.meta.env.VITE_BACKEND_URL) {
+      return import.meta.env.VITE_BACKEND_URL;
+    }
     if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      if (hostname !== 'localhost' && hostname !== '127.0.0.1' && (/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.endsWith('.local') || hostname === 'safeflame.vn')) {
-        return `http://${hostname}:5001/api`
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.endsWith('.local') || hostname === 'safeflame.vn') {
+        return `http://${hostname}:5001/api`;
       }
     }
-    return import.meta.env.VITE_BACKEND_URL || CLOUD_BACKEND_URL
+    return CLOUD_BACKEND_URL;
   })()
 
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -97,7 +100,7 @@ function App() {
         const u = JSON.parse(savedUser)
         if (u.assignedDeviceId) return u.assignedDeviceId
       }
-    } catch (e) {}
+    } catch (e) { }
     return 'DEFAULT_DEV'
   })
   const [currentDeviceName, setCurrentDeviceName] = useState(() => {
@@ -107,7 +110,7 @@ function App() {
         const u = JSON.parse(savedUser)
         if (u.roomName) return u.roomName
       }
-    } catch (e) {}
+    } catch (e) { }
     return 'Phòng Mặc Định'
   })
   const [availableDevices, setAvailableDevices] = useState([])
@@ -204,9 +207,9 @@ function App() {
             referrer: document.referrer || '',
             device: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
           })
-        }).catch(() => {})
+        }).catch(() => { })
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [backendUrl])
 
   // Lắng nghe phím Back vật lý trên Android để thoát app chuẩn xác
@@ -355,7 +358,7 @@ function App() {
             setAvailableDevices(data.devices)
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     fetchDevices()
     const interval = setInterval(fetchDevices, 10000)
@@ -901,204 +904,1053 @@ function App() {
     <>
       <div className={`min-h-screen text-slate-900 bg-grid-pattern relative overflow-x-hidden pb-16 transition-all duration-1000 ${ppm >= 600 && isOnline ? 'animate-gradient-danger' : 'animate-gradient-bg'
         }`}>
-      <div className="animate-fade-slide">
-        { }
-        <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[40%] rounded-full bg-orange-600/10 blur-[120px] pointer-events-none" />
-        <div className="absolute top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-amber-500/10 blur-[120px] pointer-events-none" />
-        {ppm >= 600 && isOnline && (
-          <div className="absolute top-[30%] left-[20%] w-[50%] h-[40%] rounded-full bg-red-500/10 blur-[150px] pointer-events-none animate-pulse" />
-        )}
+        <div className="animate-fade-slide">
+          { }
+          <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[40%] rounded-full bg-orange-600/10 blur-[120px] pointer-events-none" />
+          <div className="absolute top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-amber-500/10 blur-[120px] pointer-events-none" />
+          {ppm >= 600 && isOnline && (
+            <div className="absolute top-[30%] left-[20%] w-[50%] h-[40%] rounded-full bg-red-500/10 blur-[150px] pointer-events-none animate-pulse" />
+          )}
 
-        {/* Demo Mode Notice Bar */}
-        {currentScreen === 'demo' && (
-          <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 text-white px-3 sm:px-6 py-2.5 text-xs sm:text-sm font-bold flex flex-wrap items-center justify-between gap-2 shadow-md relative z-50">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold uppercase">Demo Mode</span>
-              <span>Bạn đang trải nghiệm giao diện Bàn Giám Sát mẫu (Không yêu cầu đăng nhập).</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentScreen('landing')}
-                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
-              >
-                ← Về Trang Giới Thiệu
-              </button>
-              <button
-                onClick={() => setCurrentScreen('login')}
-                className="px-3 py-1 rounded-lg bg-white text-orange-700 hover:bg-orange-50 text-xs font-extrabold transition-all cursor-pointer shadow-xs"
-              >
-                Đăng Nhập Ngay
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Header chính */}
-        <header className="border-b border-orange-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-3 py-3 sm:px-6 md:px-8">
-          <div className="max-w-7xl mx-auto flex flex-row justify-between items-center gap-2">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <BrandLogo
-                theme="light"
-                size="md"
-                badge={isAdminView ? 'Admin' : null}
-                onClick={() => setCurrentScreen('landing')}
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-              {/* Nút Chuyển đổi Giám Sát / Quản Trị Trọ (Dành riêng cho Chủ Trọ) */}
-              {currentUser?.role === 'landlord' && (
+          {/* Demo Mode Notice Bar */}
+          {currentScreen === 'demo' && (
+            <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 text-white px-3 sm:px-6 py-2.5 text-xs sm:text-sm font-bold flex flex-wrap items-center justify-between gap-2 shadow-md relative z-50">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold uppercase">Demo Mode</span>
+                <span>Bạn đang trải nghiệm giao diện Bàn Giám Sát mẫu (Không yêu cầu đăng nhập).</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => setIsAdminView(prev => !prev)}
-                  className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:py-1.5 sm:px-3 rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 text-left ${
-                    isAdminView
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white border-orange-500 shadow-orange-500/20'
-                      : 'bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border-orange-200 text-orange-800'
-                  }`}
-                  title={isAdminView ? 'Chuyển sang Bàn Giám Sát Thiết Bị' : 'Chuyển sang Quản Trị Dãy Trọ'}
+                  onClick={() => setCurrentScreen('landing')}
+                  className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                    isAdminView ? 'bg-white/20 text-white' : 'bg-orange-500 text-white'
-                  }`}>
-                    {isAdminView ? <Activity className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
-                  </div>
-                  <div className="hidden sm:flex flex-col items-start leading-none">
-                    <span className="text-[11px] font-black">
-                      {isAdminView ? 'Giám Sát Home' : 'Quản Trị Trọ'}
-                    </span>
-                    <span className={`text-[8px] font-extrabold uppercase tracking-wider mt-0.5 ${
-                      isAdminView ? 'text-orange-100' : 'text-orange-600'
-                    }`}>
-                      {isAdminView ? 'Bàn điều khiển' : 'Admin Panel'}
-                    </span>
-                  </div>
+                  ← Về Trang Giới Thiệu
                 </button>
-              )}
-
-              {/* Thông tin người dùng đăng nhập & Hồ sơ cá nhân */}
-              {currentUser && (
                 <button
-                  type="button"
-                  onClick={() => setIsProfileOpen(true)}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200 p-1.5 sm:py-1.5 sm:px-3 rounded-xl transition-all cursor-pointer text-left focus:outline-none shadow-xs active:scale-95"
-                  title="Xem hồ sơ cá nhân"
+                  onClick={() => setCurrentScreen('login')}
+                  className="px-3 py-1 rounded-lg bg-white text-orange-700 hover:bg-orange-50 text-xs font-extrabold transition-all cursor-pointer shadow-xs"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : <UserIcon className="w-4 h-4" />}
-                  </div>
-                  <div className="hidden sm:flex flex-col items-start leading-none">
-                    <span className="text-[11px] font-bold text-slate-800 max-w-[110px] truncate">{currentUser.fullName}</span>
-                    <span className="text-[8px] text-orange-600 font-extrabold uppercase tracking-wider mt-0.5">
-                      {currentUser.role === 'landlord' ? 'Chủ Trọ' : 'Người Thuê'}
-                    </span>
-                  </div>
+                  Đăng Nhập Ngay
                 </button>
-              )}
+              </div>
+            </div>
+          )}
 
-              {/* Nút Cài đặt Còi Báo Động */}
-              <button
-                type="button"
-                onClick={() => setIsSoundModalOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-50 to-orange-50 hover:from-red-100 hover:to-orange-100 border border-red-200/80 p-1.5 sm:py-1.5 sm:px-3 rounded-xl transition-all cursor-pointer text-left focus:outline-none shadow-xs active:scale-95 text-red-600"
-                title="Cài đặt Âm thanh Còi Báo Động"
-              >
-                <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                  <Volume2 className="w-4 h-4" />
-                </div>
-                <div className="hidden sm:flex flex-col items-start leading-none">
-                  <span className="text-[11px] font-bold text-slate-800">Còi Báo Động</span>
-                  <span className="text-[8px] text-red-600 font-extrabold uppercase tracking-wider mt-0.5">
-                    {alarmService.getSoundType() === 'whoop' ? 'Whoop' : alarmService.getSoundType() === 'beep' ? 'Bíp Bíp' : 'Cứu Hỏa'}
-                  </span>
-                </div>
-              </button>
-
-              {/* Trạng thái kết nối */}
-              <div className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 rounded-xl border transition-all ${isOnline
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                : 'bg-rose-50 border-rose-200 text-rose-700'
-                }`}>
-                {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider hidden sm:inline">
-                  {isOnline ? 'Online' : 'Offline'}
-                </span>
+          {/* Header chính */}
+          <header className="border-b border-orange-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-3 py-3 sm:px-6 md:px-8">
+            <div className="max-w-7xl mx-auto flex flex-row justify-between items-center gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <BrandLogo
+                  theme="light"
+                  size="md"
+                  badge={isAdminView ? 'Admin' : null}
+                  onClick={() => setCurrentScreen('landing')}
+                />
               </div>
 
-              {/* Các nút Tính Năng Nhanh trên Header (Chỉ dành cho Quản lý / Chủ trọ) */}
-              {currentUser?.role === 'landlord' && (
-                <div className="hidden lg:flex items-center gap-1.5 border-l border-slate-200 pl-2">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                {/* Nút Chuyển đổi Giám Sát / Quản Trị Trọ (Dành riêng cho Chủ Trọ) */}
+                {currentUser?.role === 'landlord' && (
                   <button
                     type="button"
-                    onClick={() => setIsFloorPlanOpen(true)}
-                    className="px-2.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                    title="Xem sơ đồ 2D mặt bằng toàn khu"
+                    onClick={() => setIsAdminView(prev => !prev)}
+                    className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:py-1.5 sm:px-3 rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 text-left ${isAdminView
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white border-orange-500 shadow-orange-500/20'
+                        : 'bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border-orange-200 text-orange-800'
+                      }`}
+                    title={isAdminView ? 'Chuyển sang Bàn Giám Sát Thiết Bị' : 'Chuyển sang Quản Trị Dãy Trọ'}
                   >
-                    <Layers className="w-3.5 h-3.5 text-orange-600" />
-                    <span>Sơ Đồ 2D</span>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${isAdminView ? 'bg-white/20 text-white' : 'bg-orange-500 text-white'
+                      }`}>
+                      {isAdminView ? <Activity className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start leading-none">
+                      <span className="text-[11px] font-black">
+                        {isAdminView ? 'Giám Sát Home' : 'Quản Trị Trọ'}
+                      </span>
+                      <span className={`text-[8px] font-extrabold uppercase tracking-wider mt-0.5 ${isAdminView ? 'text-orange-100' : 'text-orange-600'
+                        }`}>
+                        {isAdminView ? 'Bàn điều khiển' : 'Admin Panel'}
+                      </span>
+                    </div>
                   </button>
+                )}
 
+                {/* Thông tin người dùng đăng nhập & Hồ sơ cá nhân */}
+                {currentUser && (
                   <button
                     type="button"
-                    onClick={() => setIsBlackboxOpen(true)}
-                    className="px-2.5 py-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                    title="Xem hộp đen diễn biến sự cố"
+                    onClick={() => setIsProfileOpen(true)}
+                    className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200 p-1.5 sm:py-1.5 sm:px-3 rounded-xl transition-all cursor-pointer text-left focus:outline-none shadow-xs active:scale-95"
+                    title="Xem hồ sơ cá nhân"
                   >
-                    <FileText className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Hộp Đen</span>
+                    <div className="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                      {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : <UserIcon className="w-4 h-4" />}
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start leading-none">
+                      <span className="text-[11px] font-bold text-slate-800 max-w-[110px] truncate">{currentUser.fullName}</span>
+                      <span className="text-[8px] text-orange-600 font-extrabold uppercase tracking-wider mt-0.5">
+                        {currentUser.role === 'landlord' ? 'Chủ Trọ' : 'Người Thuê'}
+                      </span>
+                    </div>
                   </button>
+                )}
 
-                  <button
-                    type="button"
-                    onClick={() => setIsSelfTestOpen(true)}
-                    className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                    title="Chạy tự kiểm tra van, quạt, còi trong 5 giây"
-                  >
-                    <Play className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Test 5s</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Nút đăng xuất */}
-              <button
-                onClick={handleLogout}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-red-650 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.95] shadow-sm"
-                title="Đăng xuất khỏi hệ thống"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-[10px] sm:text-xs font-bold hidden sm:inline">Đăng xuất</span>
-              </button>
-
-              {/* Nút Thoát hoàn toàn ứng dụng (Chỉ hiển thị trên Android App) */}
-              {Capacitor.isNativePlatform() && (
+                {/* Nút Cài đặt Còi Báo Động */}
                 <button
                   type="button"
-                  onClick={() => CapacitorApp.exitApp()}
-                  className="p-2 sm:px-3 sm:py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.95] shadow-xs"
-                  title="Thoát hoàn toàn ứng dụng"
+                  onClick={() => setIsSoundModalOpen(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-50 to-orange-50 hover:from-red-100 hover:to-orange-100 border border-red-200/80 p-1.5 sm:py-1.5 sm:px-3 rounded-xl transition-all cursor-pointer text-left focus:outline-none shadow-xs active:scale-95 text-red-600"
+                  title="Cài đặt Âm thanh Còi Báo Động"
                 >
-                  <Power className="w-4 h-4" />
-                  <span className="text-[10px] sm:text-xs font-bold hidden sm:inline">Thoát App</span>
+                  <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <Volume2 className="w-4 h-4" />
+                  </div>
+                  <div className="hidden sm:flex flex-col items-start leading-none">
+                    <span className="text-[11px] font-bold text-slate-800">Còi Báo Động</span>
+                    <span className="text-[8px] text-red-600 font-extrabold uppercase tracking-wider mt-0.5">
+                      {alarmService.getSoundType() === 'whoop' ? 'Whoop' : alarmService.getSoundType() === 'beep' ? 'Bíp Bíp' : 'Cứu Hỏa'}
+                    </span>
+                  </div>
                 </button>
-              )}
-            </div>
-          </div>
-        </header>
 
-        { }
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 mt-4 sm:mt-6">
-          {isAdminView && currentUser?.role === 'landlord' ? (
-            <AdminDashboard
+                {/* Trạng thái kết nối */}
+                <div className={`flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 rounded-xl border transition-all ${isOnline
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-50 border-rose-200 text-rose-700'
+                  }`}>
+                  {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                  <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider hidden sm:inline">
+                    {isOnline ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+
+                {/* Các nút Tính Năng Nhanh trên Header (Chỉ dành cho Quản lý / Chủ trọ) */}
+                {currentUser?.role === 'landlord' && (
+                  <div className="hidden lg:flex items-center gap-1.5 border-l border-slate-200 pl-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsFloorPlanOpen(true)}
+                      className="px-2.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      title="Xem sơ đồ 2D mặt bằng toàn khu"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-orange-600" />
+                      <span>Sơ Đồ 2D</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsBlackboxOpen(true)}
+                      className="px-2.5 py-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      title="Xem hộp đen diễn biến sự cố"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-orange-400" />
+                      <span>Hộp Đen</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsSelfTestOpen(true)}
+                      className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      title="Chạy tự kiểm tra van, quạt, còi trong 5 giây"
+                    >
+                      <Play className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Test 5s</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Nút đăng xuất */}
+                <button
+                  onClick={handleLogout}
+                  className="p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-red-650 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.95] shadow-sm"
+                  title="Đăng xuất khỏi hệ thống"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-[10px] sm:text-xs font-bold hidden sm:inline">Đăng xuất</span>
+                </button>
+
+                {/* Nút Thoát hoàn toàn ứng dụng (Chỉ hiển thị trên Android App) */}
+                {Capacitor.isNativePlatform() && (
+                  <button
+                    type="button"
+                    onClick={() => CapacitorApp.exitApp()}
+                    className="p-2 sm:px-3 sm:py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.95] shadow-xs"
+                    title="Thoát hoàn toàn ứng dụng"
+                  >
+                    <Power className="w-4 h-4" />
+                    <span className="text-[10px] sm:text-xs font-bold hidden sm:inline">Thoát App</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
+
+          { }
+          <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 mt-4 sm:mt-6">
+            {isAdminView && currentUser?.role === 'landlord' ? (
+              <AdminDashboard
+                currentUser={currentUser}
+                token={token}
+                backendUrl={backendUrl}
+                onSwitchToMonitor={(devId, devName) => {
+                  setSelectedDeviceId(devId)
+                  setCurrentDeviceName(devName)
+                  localStorage.setItem('selected_device_id', devId)
+                  setIsAdminView(false)
+                  toast.success(`Đang can thiệp phòng: ${devName}`)
+                }}
+                onRefreshDevices={() => {
+                  if (token) {
+                    fetch(`${backendUrl}/devices`, {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(r => r.json()).then(d => {
+                      if (d.devices) setAvailableDevices(d.devices)
+                    }).catch(() => { })
+                  }
+                }}
+              />
+            ) : (
+              <>
+                {/* Banner Hồ sơ người dùng trên Dashboard */}
+                {currentUser && (
+                  <div className="glass-card rounded-2xl p-3 sm:p-4 mb-4 border border-orange-200/80 bg-white/80 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 flex items-center justify-center text-white text-base font-black shadow-md shadow-orange-500/20 shrink-0">
+                        {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                            Xin chào, <span className="text-orange-600">{currentUser.fullName}</span>
+                          </h3>
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+                            {currentUser.role === 'landlord' ? 'Chủ Trọ' : 'Người Thuê'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
+                          {currentUser.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileTab('info')
+                        setIsProfileOpen(true)
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 active:scale-95 text-orange-700 border border-orange-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <UserIcon className="w-3.5 h-3.5 text-orange-600" />
+                      <span>Hồ sơ</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Thanh chuyển đổi & Giám sát phòng/thiết bị (Multi-Device Control Bar) */}
+                {currentUser && (
+                  <div className="glass-card rounded-2xl p-3.5 sm:p-4 mb-4 border border-slate-200/80 bg-white/80 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 shrink-0">
+                          <Radio className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+                              {currentUser.role === 'landlord' ? 'Khu Vực Đang Giám Sát' : 'Thiết Bị Của Bạn'}
+                            </span>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isOnline ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'
+                              }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
+                              {isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <h4 className="text-sm sm:text-base font-black text-slate-800">
+                              {currentDeviceName || 'Phòng Mặc Định'}
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200">
+                              ID: {selectedDeviceId}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phân quyền Chủ trọ vs Người thuê */}
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        {currentUser.role === 'landlord' ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">Chuyển phòng:</span>
+                            <div className="relative">
+                              <select
+                                value={selectedDeviceId}
+                                onChange={(e) => {
+                                  const newDevId = e.target.value;
+                                  setSelectedDeviceId(newDevId);
+                                  localStorage.setItem('selected_device_id', newDevId);
+                                  const found = availableDevices.find(d => d.deviceId === newDevId);
+                                  if (found) setCurrentDeviceName(found.deviceName);
+                                  toast.success(`Đã chuyển sang xem: ${found ? found.deviceName : newDevId}`);
+                                }}
+                                className="pl-3 pr-8 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 cursor-pointer shadow-xs appearance-none"
+                              >
+                                {availableDevices.length > 0 ? (
+                                  availableDevices.map((dev) => (
+                                    <option key={dev.deviceId} value={dev.deviceId}>
+                                      {dev.deviceName} ({dev.deviceId}) {dev.isEspOnline ? '🟢' : '⚪'}
+                                    </option>
+                                  ))
+                                ) : (
+                                  <option value={selectedDeviceId}>
+                                    {currentDeviceName} ({selectedDeviceId})
+                                  </option>
+                                )}
+                              </select>
+                              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsProfileOpen(true)}
+                              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all cursor-pointer"
+                              title="Quản lý / Thêm phòng mới"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold shadow-xs">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            <span>Phòng Cố Định Của Bạn</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override) */}
+                {currentUser?.role === 'landlord' && selectedDeviceId !== 'DEFAULT_DEV' && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs mb-4 animate-fade-in">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700 shrink-0">
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-black block text-amber-900">
+                          Chế Độ Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override)
+                        </span>
+                        <span className="text-[11px] text-amber-700">
+                          Bạn đang giám sát từ xa phòng <b>{currentDeviceName} ({selectedDeviceId})</b>. Mọi thao tác khóa van, bật quạt hay ngắt còi báo giả sẽ có hiệu lực ngay lập tức.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdminView(true)}
+                        className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      >
+                        Về Quản Trị Trọ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeviceId('DEFAULT_DEV')
+                          setCurrentDeviceName('Trạm Gas Chính')
+                          localStorage.setItem('selected_device_id', 'DEFAULT_DEV')
+                          toast.success('Đã chuyển về Trạm Gas Chính')
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs transition-all cursor-pointer"
+                      >
+                        Về Trạm Tổng
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                { }
+                {ppm >= 600 && isOnline && (
+                  <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-red-100/50 border border-red-200 text-red-800 shadow-xl shadow-red-500/5 flex items-start gap-3 sm:gap-4 animate-shake">
+                    <div className="p-2.5 bg-red-600 rounded-xl text-white mt-0.5 shrink-0">
+                      <ShieldAlert className="w-5.5 h-5.5 sm:w-6 sm:h-6 animate-bounce" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm sm:text-base md:text-lg text-red-900 leading-snug">CẢNH BÁO: PHÁT HIỆN RÒ RỈ GAS!</h3>
+                      <p className="text-xs sm:text-sm text-red-800/95 mt-1 leading-normal">
+                        Nồng độ hiện tại đạt <span className="font-bold underline">{ppm} PPM</span>. Hệ thống SAFE FLAME tự động khóa van cấp và kích hoạt quạt hút. Vui lòng di tản ngay lập tức!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                { }
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+                  { }
+                  <div className={`glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 relative overflow-hidden ${isOnline ? severity.bg : 'bg-slate-100 border-slate-200 text-slate-400'
+                    }`}>
+                    <div className="flex justify-between items-center mb-5 sm:mb-6">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <Gauge className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
+                        <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-500">Nồng độ Khí Gas</span>
+                      </div>
+                      <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${!isOnline ? 'bg-slate-200 text-slate-500' :
+                        severity.level === 'SAFE' ? 'bg-emerald-100 text-emerald-800' :
+                          severity.level === 'WARNING' ? 'bg-amber-100 text-amber-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
+                        {isOnline ? severity.text : 'Mất kết nối'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center py-2 sm:py-4">
+                      <div className={`relative flex items-center justify-center rounded-full p-2 ${ppm >= 600 && isOnline ? 'animate-pulse-radar' : ''
+                        }`}>
+                        { }
+                        <svg className="w-32 h-32 xs:w-36 xs:h-36 sm:w-40 sm:h-40 transform -rotate-90" viewBox="0 0 160 160">
+                          <circle
+                            cx="80"
+                            cy="80"
+                            r="72"
+                            stroke="#e2e8f0"
+                            strokeWidth="10"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="80"
+                            cy="80"
+                            r="72"
+                            stroke={
+                              !isOnline ? '#94a3b8' :
+                                severity.level === 'SAFE' ? '#10b981' :
+                                  severity.level === 'WARNING' ? '#f59e0b' : '#ef4444'
+                            }
+                            strokeWidth="10"
+                            fill="transparent"
+                            strokeDasharray={452.3}
+                            strokeDashoffset={452.3 - (Math.min(ppm, 10000) / 10000) * 452.3}
+                            strokeLinecap="round"
+                            className="transition-all duration-1000"
+                          />
+                        </svg>
+                        { }
+                        <div className="absolute text-center">
+                          <span className="text-2xl xs:text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-slate-800">
+                            {isOnline ? ppm : '---'}
+                          </span>
+                          <span className="block text-[9px] xs:text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-bold mt-0.5">PPM</span>
+                        </div>
+                      </div>
+
+                      { }
+                      <div className="w-full flex justify-between px-2 xs:px-4 sm:px-6 mt-4 text-[9px] xs:text-[10px] text-slate-400 font-bold">
+                        <span>0 PPM (Sạch)</span>
+                        <span>4k PPM (Báo động)</span>
+                        <span>10k+ PPM</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-200/60 flex justify-between items-center flex-wrap gap-2 text-xs sm:text-sm">
+                      <span className="text-slate-500">Xu hướng:</span>
+                      <span className={`font-bold flex items-center gap-1 ${!isOnline ? 'text-slate-400' :
+                        leakRate > 5 ? 'text-red-600' :
+                          leakRate < -5 ? 'text-emerald-600' : 'text-slate-600'
+                        }`}>
+                        {isOnline ? (
+                          <>
+                            {leakRate > 5 ? '▲ Tăng nhanh' : leakRate < -5 ? '▼ Giảm dần' : '● Ổn định'}
+                            <span className="text-[10px] sm:text-xs font-mono font-normal">({Math.round(leakRate)} PPM/s)</span>
+                          </>
+                        ) : '---'}
+                      </span>
+                    </div>
+                  </div>
+
+                  { }
+                  <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <Settings className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
+                          <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-600">Thiết bị (Chạm để Bật/Tắt)</span>
+                        </div>
+                      </div>
+
+                      { }
+                      <div className="grid grid-cols-3 gap-2 xs:gap-3 lg:grid-cols-1 xl:grid-cols-3 mt-2">
+
+                        { }
+                        <button
+                          disabled={!isOnline && !isSimulationRunning}
+                          onClick={handleToggleValveReal}
+                          className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
+                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            : isValveOpen
+                              ? 'bg-emerald-50/60 border-emerald-200 text-emerald-700 shadow-neon-green'
+                              : 'bg-red-50/60 border-red-200 text-red-700 shadow-neon-red'
+                            }`}
+                        >
+                          <div className={`p-2 sm:p-3.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : isValveOpen ? 'bg-emerald-100' : 'bg-red-100'
+                            }`}>
+                            <Flame className={`w-6 h-6 sm:w-8 sm:h-8 ${isValveOpen && ppm > 600 ? 'animate-bounce' : ''}`} />
+                          </div>
+                          <div className="text-center">
+                            <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
+                              Van Khóa Gas {(!isValveOpen && (ppm >= 600 || isDangerMode)) ? '🔒' : ''}
+                            </span>
+                            <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${(!isValveOpen && (ppm >= 600 || isDangerMode)) ? 'text-rose-600 font-black' : ''}`}>
+                              {isValveOpen ? 'ĐANG MỞ' : (ppm >= 600 || isDangerMode) ? 'KHÓA AN TOÀN' : 'ĐÃ ĐÓNG'}
+                            </span>
+                          </div>
+                          { }
+                          <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : isValveOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                            }`} />
+                        </button>
+
+                        { }
+                        <button
+                          disabled={!isOnline && !isSimulationRunning}
+                          onClick={handleToggleFanReal}
+                          className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
+                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            : isFanOn
+                              ? 'bg-sky-50 border-sky-200 text-sky-700 shadow-neon-sky'
+                              : 'bg-slate-50 border-slate-200 text-slate-400'
+                            }`}
+                        >
+                          <div className={`p-2 sm:p-3.5 rounded-full relative overflow-hidden ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : isFanOn ? 'bg-sky-100' : 'bg-slate-200'
+                            }`}>
+                            {isFanOn && (
+                              <>
+                                <div className="wind-line top-2 w-6" style={{ animationDelay: '0s', left: '0%' }} />
+                                <div className="wind-line top-5 w-8" style={{ animationDelay: '0.4s', left: '10%' }} />
+                                <div className="wind-line top-8 w-5" style={{ animationDelay: '0.8s', left: '-5%' }} />
+                              </>
+                            )}
+                            <Fan className={`w-6 h-6 sm:w-8 sm:h-8 ${isFanOn ? 'animate-spin-fast' : ''}`} />
+                          </div>
+                          <div className="text-center">
+                            <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
+                              Quạt Hút Gió {(isFanOn && (ppm >= 600 || isDangerMode)) ? '⚡' : ''}
+                            </span>
+                            <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${isFanOn && (ppm >= 600 || isDangerMode) ? 'text-sky-600 font-black' : ''}`}>
+                              {isFanOn ? ((ppm >= 600 || isDangerMode) ? 'THÔNG GIÓ' : 'ĐANG BẬT') : 'ĐANG TẮT'}
+                            </span>
+                          </div>
+                          { }
+                          <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : isFanOn ? 'bg-sky-500 animate-pulse' : 'bg-slate-300'
+                            }`} />
+                        </button>
+
+                        { }
+                        <button
+                          disabled={!isOnline && !isSimulationRunning}
+                          onClick={handleToggleBuzzerReal}
+                          className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
+                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            : !isBuzzerMuted
+                              ? 'bg-amber-50/60 border-amber-200 text-amber-700 shadow-neon-orange'
+                              : 'bg-slate-50 border-slate-200 text-slate-400'
+                            }`}
+                        >
+                          <div className={`p-2 sm:p-3.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : !isBuzzerMuted ? 'bg-amber-100' : 'bg-slate-200'
+                            }`}>
+                            {isBuzzerMuted ? (
+                              <VolumeX className="w-6 h-6 sm:w-8 sm:h-8" />
+                            ) : (
+                              <Volume2 className={`w-6 h-6 sm:w-8 sm:h-8 ${!isBuzzerMuted && ppm >= 600 ? 'animate-bounce' : 'animate-pulse'}`} />
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Còi Báo Động</span>
+                            <span className="text-xs xs:text-sm sm:text-base font-extrabold block">
+                              {isBuzzerMuted ? 'ĐÃ TẮT' : 'ĐANG BẬT'}
+                            </span>
+                          </div>
+                          { }
+                          <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : !isBuzzerMuted ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'
+                            }`} />
+                        </button>
+
+                      </div>
+                    </div>
+
+                    { }
+                    <div className="mt-4 text-[10px] sm:text-[11px] text-slate-500 flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 p-2 sm:p-2.5 rounded-xl">
+                      <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-600 shrink-0" />
+                      <span>Khi môi trường trở về an toàn, hệ thống sẽ tự động tắt còi và quạt nhưng vẫn giữ nguyên khóa van (Đóng) để bạn có thời gian kiểm tra. Bạn có thể tự ấn mở van lại khi đã chắc chắn an toàn.</span>
+                    </div>
+                  </div>
+
+                  { }
+                  <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 relative overflow-hidden flex flex-col justify-between">
+
+                    <div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-4">
+                        <Activity className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
+                        <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-500">Phân tích & Dự báo thời gian nổ</span>
+                      </div>
+
+                      {leakElapsedTime >= 5 ? (
+                        <>
+                          {/* Thời gian đã rò rỉ */}
+                          <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-4">
+                            <span className="text-[10px] sm:text-xs text-slate-500 block font-bold">Thời gian rò rỉ (Gas &gt; 600 PPM)</span>
+                            <span className={`text-base sm:text-xl font-bold font-mono tracking-tight block mt-0.5 ${ppm > 600 ? 'text-amber-600 animate-pulse' : 'text-slate-400'
+                              }`}>
+                              {formatLeakDuration(leakElapsedTime)}
+                            </span>
+                          </div>
+
+                          {/* Ngưỡng cảnh báo & nổ */}
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="flex justify-between items-center text-xs sm:text-sm p-2 sm:p-2.5 rounded-xl bg-slate-50 gap-2">
+                              <span className="text-slate-500 flex items-center gap-1.5 font-semibold text-[10px] sm:text-sm shrink-0">
+                                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-orange-500 shrink-0" />
+                                <span className="hidden xs:inline">Ngưỡng Báo Động</span>
+                                <span className="inline xs:hidden">Báo động</span> (600 PPM):
+                              </span>
+                              <span className="font-mono font-bold text-orange-600 text-[10px] sm:text-sm">
+                                {ppm >= alarmThreshold ? 'Đã đạt' : formatTime(secondsToAlarm)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs sm:text-sm p-2 sm:p-2.5 rounded-xl bg-slate-50 gap-2">
+                              <span className="text-slate-500 flex items-center gap-1.5 font-semibold text-[10px] sm:text-sm shrink-0">
+                                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                                <span className="hidden xs:inline">Ngưỡng Cháy Nổ LEL</span>
+                                <span className="inline xs:hidden">Ngưỡng nổ LEL</span> (40k PPM):
+                              </span>
+                              <span className="font-mono font-bold text-red-600 text-[10px] sm:text-sm">
+                                {ppm >= lelThreshold ? 'ĐÃ ĐẠT NGƯỠNG NỔ' : formatTime(secondsToLel)}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-5 sm:py-6 px-2 sm:px-4 text-center">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-3 border border-emerald-100">
+                            <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500" />
+                          </div>
+                          <h4 className="font-bold text-xs sm:text-sm text-slate-800">Môi trường an toàn</h4>
+                          <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 max-w-[220px] leading-relaxed">
+                            Chưa phát hiện rò rỉ khí gas kéo dài. Hệ thống đang hoạt động an toàn và ổn định.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 p-2 sm:p-3 rounded-xl bg-slate-50 text-[10px] sm:text-[11px] text-slate-500 border border-slate-200/80">
+                      {leakElapsedTime >= 5 && leakRate > 0 ? (
+                        <span>
+                          Khí gas đang tăng ở tốc độ <strong>{Math.round(leakRate)} PPM/giây</strong>.
+                        </span>
+                      ) : (
+                        <span>
+                          Hiện tại không ghi nhận tốc độ tăng gas nguy hiểm. Hệ thống ổn định.
+                        </span>
+                      )}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                { }
+                <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 mt-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+                    <div>
+                      <h3 className="font-bold text-sm xs:text-base md:text-lg text-slate-800">Biểu đồ Lịch sử Nồng độ Khí Gas (30s gần nhất)</h3>
+                      <p className="text-[10px] sm:text-xs text-slate-400">Tốc độ cập nhật: 1 giây / lần</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[9px] xs:text-[10px] sm:text-xs flex-wrap">
+                      <span className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50/80 px-2 py-0.5 rounded-lg border border-emerald-100/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="hidden xs:inline">An toàn (&lt; 600)</span>
+                        <span className="inline xs:hidden">&lt; 600</span>
+                      </span>
+                      <span className="flex items-center gap-1 font-bold text-amber-700 bg-amber-50/80 px-2 py-0.5 rounded-lg border border-amber-100/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span className="hidden xs:inline">Cảnh báo (600 - 4k)</span>
+                        <span className="inline xs:hidden">600 - 4k</span>
+                      </span>
+                      <span className="flex items-center gap-1 font-bold text-red-700 bg-red-50/80 px-2 py-0.5 rounded-lg border border-red-100/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        <span className="hidden xs:inline">Nguy hiểm (&gt; 4k)</span>
+                        <span className="inline xs:hidden">&gt; 4k</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-28 xs:h-32 sm:h-36 md:h-44 bg-slate-50/50 rounded-2xl border border-slate-200 p-2 sm:p-3 relative overflow-hidden">
+                    <svg
+                      className="w-full h-full"
+                      viewBox="0 0 100 80"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ea580c" stopOpacity="0.2" />
+                          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+
+                      <line x1="0" y1="20" x2="100" y2="20" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
+                      <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
+                      <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
+
+                      <polygon
+                        points={fillPoints}
+                        fill="url(#chartGrad)"
+                        className="transition-all duration-500"
+                      />
+
+                      <polyline
+                        fill="none"
+                        stroke={
+                          ppm < 300 ? '#ea580c' :
+                            ppm < 600 ? '#f59e0b' : '#ef4444'
+                        }
+                        strokeWidth="1.5"
+                        points={points}
+                        className="transition-all duration-500"
+                      />
+                    </svg>
+                    <div className="absolute top-2 left-4 text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 bg-white/95 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold">
+                      Max: {Math.round(maxVal)} PPM
+                    </div>
+                    <div className="absolute bottom-2 left-4 text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 bg-white/95 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold">
+                      Min: {Math.round(minVal)} PPM
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Safety Center: Các Card Hành Động Nhanh */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  {currentUser?.role === 'landlord' ? (
+                    <>
+                      {/* Card 1: Sơ Đồ Mặt Bằng 2D (Chủ trọ) */}
+                      <div
+                        onClick={() => setIsFloorPlanOpen(true)}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <Layers className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                              Floor Map 2D
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Sơ Đồ Mặt Bằng Nhà Trọ
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Xem trực quan mặt bằng kiến trúc toàn tòa nhà, vị trí bếp, cửa thoát hiểm và các phòng.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Xem Sơ Đồ Mặt Bằng</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Hộp Đen Sự Cố PCCC (Chủ trọ) */}
+                      <div
+                        onClick={() => setIsBlackboxOpen(true)}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <FileText className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
+                              Blackbox PCCC
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Hộp Đen Sự Cố & PCCC
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Truy vết từng mili-giây diễn biến rò rỉ, tốc độ tự ngắt van, thông gió và in biên bản sự cố.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Mở Hộp Đen Sự Cố</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Tự Kiểm Tra Định Kỳ 5s */}
+                      <div
+                        onClick={() => setIsSelfTestOpen(true)}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <Play className="w-6 h-6 ml-0.5" />
+                            </div>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${lastTestedAt ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                              {lastTestedAt ? 'Đã Kiểm Định' : 'Cần Test'}
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Tự Test Cơ Cấu 5 Giây
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Chạy chu trình kiểm tra servo khóa van, quạt hút và còi hú định kỳ chống kẹt cơ khí.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Bắt Đầu Kiểm Tra</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Dành riêng cho User / Người Thuê Trọ: XÓA SƠ ĐỒ 2D, HỘP ĐEN VÀ CHẠY THỬ MÔ PHỎNG */}
+                      {/* Card 1: Đặt Lịch Kiểm Tra Định Kỳ & Bảo Trì PCCC */}
+                      <div
+                        onClick={() => setIsInspectionOpen(true)}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <Calendar className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                              Bảo Dưỡng PCCC
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Đặt Lịch Kiểm Tra Định Kỳ
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Gửi yêu cầu chủ trọ & kỹ thuật viên đến kiểm tra bình gas, bảo dưỡng van ngắt tự động và quạt hút an toàn.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Đặt Lịch Hẹn Ngay</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Chia Sẻ Cho Bạn Cùng Phòng */}
+                      <div
+                        onClick={() => {
+                          setProfileTab('device')
+                          setIsProfileOpen(true)
+                        }}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <Users className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                              {roomInviteCode || 'SF-' + (currentUser?.assignedDeviceId || 'DEV').slice(-3)}
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Chia Sẻ Bạn Cùng Phòng
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Lấy mã mời hoặc link chia sẻ cho bạn ở ghép cùng theo dõi khí gas và nhận cảnh báo khẩn cấp tức thời.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Mã Mời & Liên Kết Phòng</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Tiêu Lệnh PCCC Thoát Hiểm */}
+                      <div className="glass-card p-5 rounded-3xl border border-orange-200/60 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-700">
+                              <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Chuẩn PCCC
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base text-slate-800">
+                            Quy Trình Thoát Nạn PCCC
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            1. Khóa van gas ngay &bull; 2. Mở toang cửa sổ thông gió &bull; 3. Tuyệt đối không bật công tắc điện &bull; 4. Thoát ra lối an toàn.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700">
+                          <span>Bảo Vệ Tự Động 24/7</span>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="glass-card rounded-3xl p-5 sm:p-6 md:p-8 mt-6">
+                  <div className="flex items-center gap-2.5 mb-6 border-b border-slate-200 pb-4">
+                    <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
+                      <FileText className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm xs:text-base md:text-lg text-slate-800">
+                        Hướng Dẫn Sử Dụng & Giải Thích Thông Số
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-slate-400">
+                        Thông tin chi tiết về các thông số đo lường và hướng dẫn điều khiển an toàn hệ thống SAFE FLAME.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                    <div className="space-y-4 sm:space-y-5">
+                      <h4 className="font-bold text-xs sm:text-sm text-orange-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Gauge className="w-4 h-4" />
+                        Giải thích thông số giám sát
+                      </h4>
+
+                      <div className="space-y-3">
+                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
+                          <div className="shrink-0 mt-0.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block" />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-xs sm:text-sm text-slate-800">Nồng độ khí Gas (PPM)</h5>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                              Đo lượng khí gas tồn tại trong không khí bằng đơn vị Phần Triệu (PPM).
+                            </p>
+                            <ul className="mt-2 space-y-1 text-[9px] sm:text-xs text-slate-650 font-medium">
+                              <li className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <strong>Dưới 600 PPM:</strong> Môi trường an toàn, không khí sạch.
+                              </li>
+                              <li className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <strong>600 - 4000 PPM:</strong> Cảnh báo rò rỉ nhẹ, cần kiểm tra hệ thống gas.
+                              </li>
+                              <li className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                <strong>Trên 600 PPM:</strong> Ngưỡng nguy hiểm. Báo động kêu.
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
+                          <div className="shrink-0 mt-0.5">
+                            <Activity className="w-4 h-4 text-orange-600" />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-xs sm:text-sm text-slate-800">Tốc độ rò rỉ (PPM/giây) & Dự báo nổ</h5>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                              Cho biết tốc độ tăng/giảm lượng khí gas mỗi giây. Dựa vào tốc độ này, hệ thống sẽ tự động tính toán thời gian ước lượng khí gas sẽ đạt ngưỡng báo động hoặc ngưỡng nổ (LEL) để người dùng kịp thời đưa ra phương án xử lý hoặc di tản.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 sm:space-y-5">
+                      <h4 className="font-bold text-xs sm:text-sm text-orange-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Settings className="w-4 h-4" />
+                        Hướng dẫn điều khiển thiết bị
+                      </h4>
+
+                      <div className="space-y-3">
+                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
+                          <div className="shrink-0 mt-0.5">
+                            <Flame className="w-4.5 h-4.5 text-red-500" />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-xs sm:text-sm text-slate-800">Van Khóa Gas & Quạt Hút Gió</h5>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                              Khi nồng độ Gas giảm xuống dưới 600 PPM (về mức an toàn), hệ thống sẽ tự động tắt Quạt và Còi báo động. Tuy nhiên, Van khóa Gas sẽ <strong>luôn giữ nguyên trạng thái đóng</strong> nhằm đảm bảo an toàn tuyệt đối. Người dùng cần tự ấn nút mở Van trở lại sau khi đã xác nhận xử lý xong rò rỉ.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
+                          <div className="shrink-0 mt-0.5">
+                            <Volume2 className="w-4.5 h-4.5 text-amber-500" />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-xs sm:text-sm text-slate-800">Còi/Loa Cảnh Báo (Buzzer)</h5>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                              Còi báo phát âm thanh cảnh báo tại chỗ. Khi còi kêu do rò rỉ, bạn có thể tạm thời nhấn nút tắt còi để ngưng tiếng ồn khó chịu trong lúc tiến hành xử lý rò rỉ gas hoặc khi đã khóa van an toàn.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </>
+            )}
+          </main>
+
+          { }
+          {isProfileOpen && (
+            <ProfileModal
               currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
               token={token}
               backendUrl={backendUrl}
-              onSwitchToMonitor={(devId, devName) => {
-                setSelectedDeviceId(devId)
-                setCurrentDeviceName(devName)
-                localStorage.setItem('selected_device_id', devId)
-                setIsAdminView(false)
-                toast.success(`Đang can thiệp phòng: ${devName}`)
+              selectedDeviceId={selectedDeviceId}
+              setSelectedDeviceId={setSelectedDeviceId}
+              currentDeviceName={currentDeviceName}
+              setCurrentDeviceName={setCurrentDeviceName}
+              availableDevices={availableDevices}
+              onClose={() => setIsProfileOpen(false)}
+              onOpenAdmin={() => {
+                setIsProfileOpen(false)
+                setIsAdminView(true)
+              }}
+              roomInviteCode={roomInviteCode}
+              initialTab={profileTab}
+            />
+          )}
+
+          {isSoundModalOpen && (
+            <SoundSettingsModal onClose={() => setIsSoundModalOpen(false)} />
+          )}
+
+          {/* MODAL SƠ ĐỒ MẶT BẰNG 2D (Chỉ dành cho Chủ Trọ) */}
+          {currentUser?.role === 'landlord' && (
+            <FloorPlanModal
+              isOpen={isFloorPlanOpen}
+              onClose={() => setIsFloorPlanOpen(false)}
+              devices={availableDevices && availableDevices.length > 0 ? availableDevices : [{
+                deviceId: selectedDeviceId,
+                deviceName: currentDeviceName,
+                ppm,
+                isOpen: isValveOpen,
+                isOn: isFanOn,
+                isOnline,
+                floor: 1,
+                isDangerMode
+              }]}
+              currentDeviceId={selectedDeviceId}
+              onSelectDevice={(id) => {
+                setSelectedDeviceId(id)
+                localStorage.setItem('selected_device_id', id)
+                const dev = availableDevices.find(d => d.deviceId === id)
+                if (dev) {
+                  setCurrentDeviceName(dev.deviceName)
+                  toast.success(`Đang can thiệp phòng: ${dev.deviceName}`)
+                }
               }}
               onRefreshDevices={() => {
                 if (token) {
@@ -1106,916 +1958,62 @@ function App() {
                     headers: { 'Authorization': `Bearer ${token}` }
                   }).then(r => r.json()).then(d => {
                     if (d.devices) setAvailableDevices(d.devices)
-                  }).catch(() => {})
+                  }).catch(() => { })
                 }
               }}
+              userRole="landlord"
+              backendUrl={backendUrl}
+              token={token}
             />
-          ) : (
-            <>
-              {/* Banner Hồ sơ người dùng trên Dashboard */}
-              {currentUser && (
-            <div className="glass-card rounded-2xl p-3 sm:p-4 mb-4 border border-orange-200/80 bg-white/80 flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 flex items-center justify-center text-white text-base font-black shadow-md shadow-orange-500/20 shrink-0">
-                  {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800">
-                      Xin chào, <span className="text-orange-600">{currentUser.fullName}</span>
-                    </h3>
-                    <span className="px-2 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase rounded-full bg-orange-100 text-orange-800 border border-orange-200">
-                      {currentUser.role === 'landlord' ? 'Chủ Trọ' : 'Người Thuê'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
-                    {currentUser.email}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileTab('info')
-                  setIsProfileOpen(true)
-                }}
-                className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 active:scale-95 text-orange-700 border border-orange-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <UserIcon className="w-3.5 h-3.5 text-orange-600" />
-                <span>Hồ sơ</span>
-              </button>
-            </div>
           )}
 
-          {/* Thanh chuyển đổi & Giám sát phòng/thiết bị (Multi-Device Control Bar) */}
-          {currentUser && (
-            <div className="glass-card rounded-2xl p-3.5 sm:p-4 mb-4 border border-slate-200/80 bg-white/80 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 shrink-0">
-                    <Radio className="w-5 h-5 animate-pulse" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
-                        {currentUser.role === 'landlord' ? 'Khu Vực Đang Giám Sát' : 'Thiết Bị Của Bạn'}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        isOnline ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
-                        {isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <h4 className="text-sm sm:text-base font-black text-slate-800">
-                        {currentDeviceName || 'Phòng Mặc Định'}
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200">
-                        ID: {selectedDeviceId}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Phân quyền Chủ trọ vs Người thuê */}
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  {currentUser.role === 'landlord' ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-500 hidden sm:inline">Chuyển phòng:</span>
-                      <div className="relative">
-                        <select
-                          value={selectedDeviceId}
-                          onChange={(e) => {
-                            const newDevId = e.target.value;
-                            setSelectedDeviceId(newDevId);
-                            localStorage.setItem('selected_device_id', newDevId);
-                            const found = availableDevices.find(d => d.deviceId === newDevId);
-                            if (found) setCurrentDeviceName(found.deviceName);
-                            toast.success(`Đã chuyển sang xem: ${found ? found.deviceName : newDevId}`);
-                          }}
-                          className="pl-3 pr-8 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 cursor-pointer shadow-xs appearance-none"
-                        >
-                          {availableDevices.length > 0 ? (
-                            availableDevices.map((dev) => (
-                              <option key={dev.deviceId} value={dev.deviceId}>
-                                {dev.deviceName} ({dev.deviceId}) {dev.isEspOnline ? '🟢' : '⚪'}
-                              </option>
-                            ))
-                          ) : (
-                            <option value={selectedDeviceId}>
-                              {currentDeviceName} ({selectedDeviceId})
-                            </option>
-                          )}
-                        </select>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsProfileOpen(true)}
-                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all cursor-pointer"
-                        title="Quản lý / Thêm phòng mới"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold shadow-xs">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Phòng Cố Định Của Bạn</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* MODAL HỘP ĐEN SỰ CỐ PCCC (Chỉ dành cho Chủ Trọ) */}
+          {currentUser?.role === 'landlord' && (
+            <IncidentBlackboxModal
+              isOpen={isBlackboxOpen}
+              onClose={() => setIsBlackboxOpen(false)}
+              backendUrl={backendUrl}
+              token={token}
+              deviceId={selectedDeviceId}
+              roomName={currentDeviceName}
+            />
           )}
 
-          {/* Banner Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override) */}
-          {currentUser?.role === 'landlord' && selectedDeviceId !== 'DEFAULT_DEV' && (
-            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs mb-4 animate-fade-in">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700 shrink-0">
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="font-black block text-amber-900">
-                    Chế Độ Can Thiệp Khẩn Cấp Của Chủ Trọ (Master Override)
-                  </span>
-                  <span className="text-[11px] text-amber-700">
-                    Bạn đang giám sát từ xa phòng <b>{currentDeviceName} ({selectedDeviceId})</b>. Mọi thao tác khóa van, bật quạt hay ngắt còi báo giả sẽ có hiệu lực ngay lập tức.
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsAdminView(true)}
-                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                >
-                  Về Quản Trị Trọ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDeviceId('DEFAULT_DEV')
-                    setCurrentDeviceName('Trạm Gas Chính')
-                    localStorage.setItem('selected_device_id', 'DEFAULT_DEV')
-                    toast.success('Đã chuyển về Trạm Gas Chính')
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs transition-all cursor-pointer"
-                >
-                  Về Trạm Tổng
-                </button>
-              </div>
-            </div>
+          {/* MODAL TỰ KIỂM TRA ĐỊNH KỲ 5S (Chỉ dành cho Chủ Trọ / Kỹ thuật viên) */}
+          {currentUser?.role === 'landlord' && (
+            <SelfTestModal
+              isOpen={isSelfTestOpen}
+              onClose={() => setIsSelfTestOpen(false)}
+              backendUrl={backendUrl}
+              token={token}
+              deviceId={selectedDeviceId}
+              roomName={currentDeviceName}
+              isOnline={isOnline}
+              lastTestedAt={lastTestedAt}
+              testScheduleDays={testScheduleDays}
+              onTestComplete={(date) => {
+                setLastTestedAt(date)
+                toast.success('Đã hoàn tất tự kiểm tra định kỳ 5 giây!')
+              }}
+            />
           )}
 
-          { }
-          {ppm >= 600 && isOnline && (
-            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-red-100/50 border border-red-200 text-red-800 shadow-xl shadow-red-500/5 flex items-start gap-3 sm:gap-4 animate-shake">
-              <div className="p-2.5 bg-red-600 rounded-xl text-white mt-0.5 shrink-0">
-                <ShieldAlert className="w-5.5 h-5.5 sm:w-6 sm:h-6 animate-bounce" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm sm:text-base md:text-lg text-red-900 leading-snug">CẢNH BÁO: PHÁT HIỆN RÒ RỈ GAS!</h3>
-                <p className="text-xs sm:text-sm text-red-800/95 mt-1 leading-normal">
-                  Nồng độ hiện tại đạt <span className="font-bold underline">{ppm} PPM</span>. Hệ thống SAFE FLAME tự động khóa van cấp và kích hoạt quạt hút. Vui lòng di tản ngay lập tức!
-                </p>
-              </div>
-            </div>
-          )}
-
-          { }
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-
-            { }
-            <div className={`glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 relative overflow-hidden ${isOnline ? severity.bg : 'bg-slate-100 border-slate-200 text-slate-400'
-              }`}>
-              <div className="flex justify-between items-center mb-5 sm:mb-6">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Gauge className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
-                  <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-500">Nồng độ Khí Gas</span>
-                </div>
-                <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${!isOnline ? 'bg-slate-200 text-slate-500' :
-                  severity.level === 'SAFE' ? 'bg-emerald-100 text-emerald-800' :
-                    severity.level === 'WARNING' ? 'bg-amber-100 text-amber-800' :
-                      'bg-red-100 text-red-800'
-                  }`}>
-                  {isOnline ? severity.text : 'Mất kết nối'}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center py-2 sm:py-4">
-                <div className={`relative flex items-center justify-center rounded-full p-2 ${ppm >= 600 && isOnline ? 'animate-pulse-radar' : ''
-                  }`}>
-                  { }
-                  <svg className="w-32 h-32 xs:w-36 xs:h-36 sm:w-40 sm:h-40 transform -rotate-90" viewBox="0 0 160 160">
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="72"
-                      stroke="#e2e8f0"
-                      strokeWidth="10"
-                      fill="transparent"
-                    />
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="72"
-                      stroke={
-                        !isOnline ? '#94a3b8' :
-                          severity.level === 'SAFE' ? '#10b981' :
-                            severity.level === 'WARNING' ? '#f59e0b' : '#ef4444'
-                      }
-                      strokeWidth="10"
-                      fill="transparent"
-                      strokeDasharray={452.3}
-                      strokeDashoffset={452.3 - (Math.min(ppm, 10000) / 10000) * 452.3}
-                      strokeLinecap="round"
-                      className="transition-all duration-1000"
-                    />
-                  </svg>
-                  { }
-                  <div className="absolute text-center">
-                    <span className="text-2xl xs:text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-slate-800">
-                      {isOnline ? ppm : '---'}
-                    </span>
-                    <span className="block text-[9px] xs:text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-bold mt-0.5">PPM</span>
-                  </div>
-                </div>
-
-                { }
-                <div className="w-full flex justify-between px-2 xs:px-4 sm:px-6 mt-4 text-[9px] xs:text-[10px] text-slate-400 font-bold">
-                  <span>0 PPM (Sạch)</span>
-                  <span>4k PPM (Báo động)</span>
-                  <span>10k+ PPM</span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-200/60 flex justify-between items-center flex-wrap gap-2 text-xs sm:text-sm">
-                <span className="text-slate-500">Xu hướng:</span>
-                <span className={`font-bold flex items-center gap-1 ${!isOnline ? 'text-slate-400' :
-                  leakRate > 5 ? 'text-red-600' :
-                    leakRate < -5 ? 'text-emerald-600' : 'text-slate-600'
-                  }`}>
-                  {isOnline ? (
-                    <>
-                      {leakRate > 5 ? '▲ Tăng nhanh' : leakRate < -5 ? '▼ Giảm dần' : '● Ổn định'}
-                      <span className="text-[10px] sm:text-xs font-mono font-normal">({Math.round(leakRate)} PPM/s)</span>
-                    </>
-                  ) : '---'}
-                </span>
-              </div>
-            </div>
-
-            { }
-            <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <Settings className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
-                    <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-600">Thiết bị (Chạm để Bật/Tắt)</span>
-                  </div>
-                </div>
-
-                { }
-                <div className="grid grid-cols-3 gap-2 xs:gap-3 lg:grid-cols-1 xl:grid-cols-3 mt-2">
-
-                  { }
-                  <button
-                    disabled={!isOnline && !isSimulationRunning}
-                    onClick={handleToggleValveReal}
-                    className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
-                      ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
-                      : isValveOpen
-                        ? 'bg-emerald-50/60 border-emerald-200 text-emerald-700 shadow-neon-green'
-                        : 'bg-red-50/60 border-red-200 text-red-700 shadow-neon-red'
-                      }`}
-                  >
-                    <div className={`p-2 sm:p-3.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : isValveOpen ? 'bg-emerald-100' : 'bg-red-100'
-                      }`}>
-                      <Flame className={`w-6 h-6 sm:w-8 sm:h-8 ${isValveOpen && ppm > 600 ? 'animate-bounce' : ''}`} />
-                    </div>
-                    <div className="text-center">
-                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
-                        Van Khóa Gas {(!isValveOpen && (ppm >= 600 || isDangerMode)) ? '🔒' : ''}
-                      </span>
-                      <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${(!isValveOpen && (ppm >= 600 || isDangerMode)) ? 'text-rose-600 font-black' : ''}`}>
-                        {isValveOpen ? 'ĐANG MỞ' : (ppm >= 600 || isDangerMode) ? 'KHÓA AN TOÀN' : 'ĐÃ ĐÓNG'}
-                      </span>
-                    </div>
-                    { }
-                    <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : isValveOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-                      }`} />
-                  </button>
-
-                  { }
-                  <button
-                    disabled={!isOnline && !isSimulationRunning}
-                    onClick={handleToggleFanReal}
-                    className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
-                      ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
-                      : isFanOn
-                        ? 'bg-sky-50 border-sky-200 text-sky-700 shadow-neon-sky'
-                        : 'bg-slate-50 border-slate-200 text-slate-400'
-                      }`}
-                  >
-                    <div className={`p-2 sm:p-3.5 rounded-full relative overflow-hidden ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : isFanOn ? 'bg-sky-100' : 'bg-slate-200'
-                      }`}>
-                      {isFanOn && (
-                        <>
-                          <div className="wind-line top-2 w-6" style={{ animationDelay: '0s', left: '0%' }} />
-                          <div className="wind-line top-5 w-8" style={{ animationDelay: '0.4s', left: '10%' }} />
-                          <div className="wind-line top-8 w-5" style={{ animationDelay: '0.8s', left: '-5%' }} />
-                        </>
-                      )}
-                      <Fan className={`w-6 h-6 sm:w-8 sm:h-8 ${isFanOn ? 'animate-spin-fast' : ''}`} />
-                    </div>
-                    <div className="text-center">
-                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">
-                        Quạt Hút Gió {(isFanOn && (ppm >= 600 || isDangerMode)) ? '⚡' : ''}
-                      </span>
-                      <span className={`text-xs xs:text-sm sm:text-base font-extrabold block ${isFanOn && (ppm >= 600 || isDangerMode) ? 'text-sky-600 font-black' : ''}`}>
-                        {isFanOn ? ((ppm >= 600 || isDangerMode) ? 'THÔNG GIÓ' : 'ĐANG BẬT') : 'ĐANG TẮT'}
-                      </span>
-                    </div>
-                    { }
-                    <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : isFanOn ? 'bg-sky-500 animate-pulse' : 'bg-slate-300'
-                      }`} />
-                  </button>
-
-                  { }
-                  <button
-                    disabled={!isOnline && !isSimulationRunning}
-                    onClick={handleToggleBuzzerReal}
-                    className={`relative p-3.5 xs:p-4 sm:p-5 rounded-2xl border flex flex-col items-center justify-center gap-2 sm:gap-3 transition-all duration-300 active:scale-95 cursor-pointer select-none ${!isOnline && !isSimulationRunning
-                      ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
-                      : !isBuzzerMuted
-                        ? 'bg-amber-50/60 border-amber-200 text-amber-700 shadow-neon-orange'
-                        : 'bg-slate-50 border-slate-200 text-slate-400'
-                      }`}
-                  >
-                    <div className={`p-2 sm:p-3.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-200' : !isBuzzerMuted ? 'bg-amber-100' : 'bg-slate-200'
-                      }`}>
-                      {isBuzzerMuted ? (
-                        <VolumeX className="w-6 h-6 sm:w-8 sm:h-8" />
-                      ) : (
-                        <Volume2 className={`w-6 h-6 sm:w-8 sm:h-8 ${!isBuzzerMuted && ppm >= 600 ? 'animate-bounce' : 'animate-pulse'}`} />
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Còi Báo Động</span>
-                      <span className="text-xs xs:text-sm sm:text-base font-extrabold block">
-                        {isBuzzerMuted ? 'ĐÃ TẮT' : 'ĐANG BẬT'}
-                      </span>
-                    </div>
-                    { }
-                    <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${!isOnline && !isSimulationRunning ? 'bg-slate-400' : !isBuzzerMuted ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'
-                      }`} />
-                  </button>
-
-                </div>
-              </div>
-
-              { }
-              <div className="mt-4 text-[10px] sm:text-[11px] text-slate-500 flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 p-2 sm:p-2.5 rounded-xl">
-                <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-600 shrink-0" />
-                <span>Khi môi trường trở về an toàn, hệ thống sẽ tự động tắt còi và quạt nhưng vẫn giữ nguyên khóa van (Đóng) để bạn có thời gian kiểm tra. Bạn có thể tự ấn mở van lại khi đã chắc chắn an toàn.</span>
-              </div>
-            </div>
-
-            { }
-            <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 relative overflow-hidden flex flex-col justify-between">
-
-              <div>
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-4">
-                  <Activity className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
-                  <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-500">Phân tích & Dự báo thời gian nổ</span>
-                </div>
-
-                {leakElapsedTime >= 5 ? (
-                  <>
-                    {/* Thời gian đã rò rỉ */}
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-4">
-                      <span className="text-[10px] sm:text-xs text-slate-500 block font-bold">Thời gian rò rỉ (Gas &gt; 600 PPM)</span>
-                      <span className={`text-base sm:text-xl font-bold font-mono tracking-tight block mt-0.5 ${ppm > 600 ? 'text-amber-600 animate-pulse' : 'text-slate-400'
-                        }`}>
-                        {formatLeakDuration(leakElapsedTime)}
-                      </span>
-                    </div>
-
-                    {/* Ngưỡng cảnh báo & nổ */}
-                    <div className="space-y-2 sm:space-y-3">
-                      <div className="flex justify-between items-center text-xs sm:text-sm p-2 sm:p-2.5 rounded-xl bg-slate-50 gap-2">
-                        <span className="text-slate-500 flex items-center gap-1.5 font-semibold text-[10px] sm:text-sm shrink-0">
-                          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-orange-500 shrink-0" />
-                          <span className="hidden xs:inline">Ngưỡng Báo Động</span>
-                          <span className="inline xs:hidden">Báo động</span> (600 PPM):
-                        </span>
-                        <span className="font-mono font-bold text-orange-600 text-[10px] sm:text-sm">
-                          {ppm >= alarmThreshold ? 'Đã đạt' : formatTime(secondsToAlarm)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs sm:text-sm p-2 sm:p-2.5 rounded-xl bg-slate-50 gap-2">
-                        <span className="text-slate-500 flex items-center gap-1.5 font-semibold text-[10px] sm:text-sm shrink-0">
-                          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
-                          <span className="hidden xs:inline">Ngưỡng Cháy Nổ LEL</span>
-                          <span className="inline xs:hidden">Ngưỡng nổ LEL</span> (40k PPM):
-                        </span>
-                        <span className="font-mono font-bold text-red-600 text-[10px] sm:text-sm">
-                          {ppm >= lelThreshold ? 'ĐÃ ĐẠT NGƯỠNG NỔ' : formatTime(secondsToLel)}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-5 sm:py-6 px-2 sm:px-4 text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-3 border border-emerald-100">
-                      <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500" />
-                    </div>
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-800">Môi trường an toàn</h4>
-                    <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 max-w-[220px] leading-relaxed">
-                      Chưa phát hiện rò rỉ khí gas kéo dài. Hệ thống đang hoạt động an toàn và ổn định.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 p-2 sm:p-3 rounded-xl bg-slate-50 text-[10px] sm:text-[11px] text-slate-500 border border-slate-200/80">
-                {leakElapsedTime >= 5 && leakRate > 0 ? (
-                  <span>
-                    Khí gas đang tăng ở tốc độ <strong>{Math.round(leakRate)} PPM/giây</strong>.
-                  </span>
-                ) : (
-                  <span>
-                    Hiện tại không ghi nhận tốc độ tăng gas nguy hiểm. Hệ thống ổn định.
-                  </span>
-                )}
-              </div>
-
-            </div>
-
-          </div>
-
-          { }
-          <div className="glass-card glass-card-hover rounded-3xl p-4 sm:p-5 md:p-6 mt-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
-              <div>
-                <h3 className="font-bold text-sm xs:text-base md:text-lg text-slate-800">Biểu đồ Lịch sử Nồng độ Khí Gas (30s gần nhất)</h3>
-                <p className="text-[10px] sm:text-xs text-slate-400">Tốc độ cập nhật: 1 giây / lần</p>
-              </div>
-              <div className="flex items-center gap-2 text-[9px] xs:text-[10px] sm:text-xs flex-wrap">
-                <span className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50/80 px-2 py-0.5 rounded-lg border border-emerald-100/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="hidden xs:inline">An toàn (&lt; 600)</span>
-                  <span className="inline xs:hidden">&lt; 600</span>
-                </span>
-                <span className="flex items-center gap-1 font-bold text-amber-700 bg-amber-50/80 px-2 py-0.5 rounded-lg border border-amber-100/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span className="hidden xs:inline">Cảnh báo (600 - 4k)</span>
-                  <span className="inline xs:hidden">600 - 4k</span>
-                </span>
-                <span className="flex items-center gap-1 font-bold text-red-700 bg-red-50/80 px-2 py-0.5 rounded-lg border border-red-100/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span className="hidden xs:inline">Nguy hiểm (&gt; 4k)</span>
-                  <span className="inline xs:hidden">&gt; 4k</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full h-28 xs:h-32 sm:h-36 md:h-44 bg-slate-50/50 rounded-2xl border border-slate-200 p-2 sm:p-3 relative overflow-hidden">
-              <svg
-                className="w-full h-full"
-                viewBox="0 0 100 80"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ea580c" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                <line x1="0" y1="20" x2="100" y2="20" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
-                <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
-                <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="0.5" />
-
-                <polygon
-                  points={fillPoints}
-                  fill="url(#chartGrad)"
-                  className="transition-all duration-500"
-                />
-
-                <polyline
-                  fill="none"
-                  stroke={
-                    ppm < 300 ? '#ea580c' :
-                      ppm < 600 ? '#f59e0b' : '#ef4444'
-                  }
-                  strokeWidth="1.5"
-                  points={points}
-                  className="transition-all duration-500"
-                />
-              </svg>
-              <div className="absolute top-2 left-4 text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 bg-white/95 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold">
-                Max: {Math.round(maxVal)} PPM
-              </div>
-              <div className="absolute bottom-2 left-4 text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 bg-white/95 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold">
-                Min: {Math.round(minVal)} PPM
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Safety Center: Các Card Hành Động Nhanh */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            {currentUser?.role === 'landlord' ? (
-              <>
-                {/* Card 1: Sơ Đồ Mặt Bằng 2D (Chủ trọ) */}
-                <div
-                  onClick={() => setIsFloorPlanOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <Layers className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                        Floor Map 2D
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Sơ Đồ Mặt Bằng Nhà Trọ
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Xem trực quan mặt bằng kiến trúc toàn tòa nhà, vị trí bếp, cửa thoát hiểm và các phòng.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Xem Sơ Đồ Mặt Bằng</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 2: Hộp Đen Sự Cố PCCC (Chủ trọ) */}
-                <div
-                  onClick={() => setIsBlackboxOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
-                        Blackbox PCCC
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Hộp Đen Sự Cố & PCCC
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Truy vết từng mili-giây diễn biến rò rỉ, tốc độ tự ngắt van, thông gió và in biên bản sự cố.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Mở Hộp Đen Sự Cố</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 3: Tự Kiểm Tra Định Kỳ 5s */}
-                <div
-                  onClick={() => setIsSelfTestOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <Play className="w-6 h-6 ml-0.5" />
-                      </div>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
-                        lastTestedAt ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {lastTestedAt ? 'Đã Kiểm Định' : 'Cần Test'}
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Tự Test Cơ Cấu 5 Giây
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Chạy chu trình kiểm tra servo khóa van, quạt hút và còi hú định kỳ chống kẹt cơ khí.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Bắt Đầu Kiểm Tra</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Dành riêng cho User / Người Thuê Trọ: XÓA SƠ ĐỒ 2D, HỘP ĐEN VÀ CHẠY THỬ MÔ PHỎNG */}
-                {/* Card 1: Đặt Lịch Kiểm Tra Định Kỳ & Bảo Trì PCCC */}
-                <div
-                  onClick={() => setIsInspectionOpen(true)}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                        Bảo Dưỡng PCCC
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Đặt Lịch Kiểm Tra Định Kỳ
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Gửi yêu cầu chủ trọ & kỹ thuật viên đến kiểm tra bình gas, bảo dưỡng van ngắt tự động và quạt hút an toàn.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Đặt Lịch Hẹn Ngay</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 2: Chia Sẻ Cho Bạn Cùng Phòng */}
-                <div
-                  onClick={() => {
-                    setProfileTab('device')
-                    setIsProfileOpen(true)
-                  }}
-                  className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                        {roomInviteCode || 'SF-' + (currentUser?.assignedDeviceId || 'DEV').slice(-3)}
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                      Chia Sẻ Bạn Cùng Phòng
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Lấy mã mời hoặc link chia sẻ cho bạn ở ghép cùng theo dõi khí gas và nhận cảnh báo khẩn cấp tức thời.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                    <span>Mã Mời & Liên Kết Phòng</span>
-                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                  </div>
-                </div>
-
-                {/* Card 3: Tiêu Lệnh PCCC Thoát Hiểm */}
-                <div className="glass-card p-5 rounded-3xl border border-orange-200/60 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-700">
-                        <ShieldCheck className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Chuẩn PCCC
-                      </span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-base text-slate-800">
-                      Quy Trình Thoát Nạn PCCC
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      1. Khóa van gas ngay &bull; 2. Mở toang cửa sổ thông gió &bull; 3. Tuyệt đối không bật công tắc điện &bull; 4. Thoát ra lối an toàn.
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700">
-                    <span>Bảo Vệ Tự Động 24/7</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="glass-card rounded-3xl p-5 sm:p-6 md:p-8 mt-6">
-            <div className="flex items-center gap-2.5 mb-6 border-b border-slate-200 pb-4">
-              <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
-                <FileText className="w-5 h-5 md:w-6 md:h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm xs:text-base md:text-lg text-slate-800">
-                  Hướng Dẫn Sử Dụng & Giải Thích Thông Số
-                </h3>
-                <p className="text-[10px] sm:text-xs text-slate-400">
-                  Thông tin chi tiết về các thông số đo lường và hướng dẫn điều khiển an toàn hệ thống SAFE FLAME.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-              <div className="space-y-4 sm:space-y-5">
-                <h4 className="font-bold text-xs sm:text-sm text-orange-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Gauge className="w-4 h-4" />
-                  Giải thích thông số giám sát
-                </h4>
-
-                <div className="space-y-3">
-                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
-                    <div className="shrink-0 mt-0.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-xs sm:text-sm text-slate-800">Nồng độ khí Gas (PPM)</h5>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
-                        Đo lượng khí gas tồn tại trong không khí bằng đơn vị Phần Triệu (PPM).
-                      </p>
-                      <ul className="mt-2 space-y-1 text-[9px] sm:text-xs text-slate-650 font-medium">
-                        <li className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          <strong>Dưới 600 PPM:</strong> Môi trường an toàn, không khí sạch.
-                        </li>
-                        <li className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                          <strong>600 - 4000 PPM:</strong> Cảnh báo rò rỉ nhẹ, cần kiểm tra hệ thống gas.
-                        </li>
-                        <li className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                          <strong>Trên 600 PPM:</strong> Ngưỡng nguy hiểm. Báo động kêu.
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
-                    <div className="shrink-0 mt-0.5">
-                      <Activity className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-xs sm:text-sm text-slate-800">Tốc độ rò rỉ (PPM/giây) & Dự báo nổ</h5>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
-                        Cho biết tốc độ tăng/giảm lượng khí gas mỗi giây. Dựa vào tốc độ này, hệ thống sẽ tự động tính toán thời gian ước lượng khí gas sẽ đạt ngưỡng báo động hoặc ngưỡng nổ (LEL) để người dùng kịp thời đưa ra phương án xử lý hoặc di tản.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 sm:space-y-5">
-                <h4 className="font-bold text-xs sm:text-sm text-orange-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Settings className="w-4 h-4" />
-                  Hướng dẫn điều khiển thiết bị
-                </h4>
-
-                <div className="space-y-3">
-                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
-                    <div className="shrink-0 mt-0.5">
-                      <Flame className="w-4.5 h-4.5 text-red-500" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-xs sm:text-sm text-slate-800">Van Khóa Gas & Quạt Hút Gió</h5>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
-                        Khi nồng độ Gas giảm xuống dưới 600 PPM (về mức an toàn), hệ thống sẽ tự động tắt Quạt và Còi báo động. Tuy nhiên, Van khóa Gas sẽ <strong>luôn giữ nguyên trạng thái đóng</strong> nhằm đảm bảo an toàn tuyệt đối. Người dùng cần tự ấn nút mở Van trở lại sau khi đã xác nhận xử lý xong rò rỉ.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3">
-                    <div className="shrink-0 mt-0.5">
-                      <Volume2 className="w-4.5 h-4.5 text-amber-500" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-xs sm:text-sm text-slate-800">Còi/Loa Cảnh Báo (Buzzer)</h5>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
-                        Còi báo phát âm thanh cảnh báo tại chỗ. Khi còi kêu do rò rỉ, bạn có thể tạm thời nhấn nút tắt còi để ngưng tiếng ồn khó chịu trong lúc tiến hành xử lý rò rỉ gas hoặc khi đã khóa van an toàn.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-            </>
-          )}
-        </main>
-
-        { }
-        {isProfileOpen && (
-          <ProfileModal
+          {/* MODAL ĐẶT LỊCH KIỂM TRA ĐỊNH KỲ CHO NGƯỜI THUÊ TRỌ */}
+          <InspectionBookingModal
+            isOpen={isInspectionOpen}
+            onClose={() => setIsInspectionOpen(false)}
+            backendUrl={backendUrl}
+            token={token}
+            deviceId={selectedDeviceId}
+            roomName={currentDeviceName}
             currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            token={token}
-            backendUrl={backendUrl}
-            selectedDeviceId={selectedDeviceId}
-            setSelectedDeviceId={setSelectedDeviceId}
-            currentDeviceName={currentDeviceName}
-            setCurrentDeviceName={setCurrentDeviceName}
-            availableDevices={availableDevices}
-            onClose={() => setIsProfileOpen(false)}
-            onOpenAdmin={() => {
-              setIsProfileOpen(false)
-              setIsAdminView(true)
-            }}
-            roomInviteCode={roomInviteCode}
-            initialTab={profileTab}
           />
-        )}
 
-        {isSoundModalOpen && (
-          <SoundSettingsModal onClose={() => setIsSoundModalOpen(false)} />
-        )}
-
-        {/* MODAL SƠ ĐỒ MẶT BẰNG 2D (Chỉ dành cho Chủ Trọ) */}
-        {currentUser?.role === 'landlord' && (
-          <FloorPlanModal
-            isOpen={isFloorPlanOpen}
-            onClose={() => setIsFloorPlanOpen(false)}
-            devices={availableDevices && availableDevices.length > 0 ? availableDevices : [{
-              deviceId: selectedDeviceId,
-              deviceName: currentDeviceName,
-              ppm,
-              isOpen: isValveOpen,
-              isOn: isFanOn,
-              isOnline,
-              floor: 1,
-              isDangerMode
-            }]}
-            currentDeviceId={selectedDeviceId}
-            onSelectDevice={(id) => {
-              setSelectedDeviceId(id)
-              localStorage.setItem('selected_device_id', id)
-              const dev = availableDevices.find(d => d.deviceId === id)
-              if (dev) {
-                setCurrentDeviceName(dev.deviceName)
-                toast.success(`Đang can thiệp phòng: ${dev.deviceName}`)
-              }
-            }}
-            onRefreshDevices={() => {
-              if (token) {
-                fetch(`${backendUrl}/devices`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.json()).then(d => {
-                  if (d.devices) setAvailableDevices(d.devices)
-                }).catch(() => {})
-              }
-            }}
-            userRole="landlord"
-            backendUrl={backendUrl}
-            token={token}
-          />
-        )}
-
-        {/* MODAL HỘP ĐEN SỰ CỐ PCCC (Chỉ dành cho Chủ Trọ) */}
-        {currentUser?.role === 'landlord' && (
-          <IncidentBlackboxModal
-            isOpen={isBlackboxOpen}
-            onClose={() => setIsBlackboxOpen(false)}
-            backendUrl={backendUrl}
-            token={token}
-            deviceId={selectedDeviceId}
-            roomName={currentDeviceName}
-          />
-        )}
-
-        {/* MODAL TỰ KIỂM TRA ĐỊNH KỲ 5S (Chỉ dành cho Chủ Trọ / Kỹ thuật viên) */}
-        {currentUser?.role === 'landlord' && (
-          <SelfTestModal
-            isOpen={isSelfTestOpen}
-            onClose={() => setIsSelfTestOpen(false)}
-            backendUrl={backendUrl}
-            token={token}
-            deviceId={selectedDeviceId}
-            roomName={currentDeviceName}
-            isOnline={isOnline}
-            lastTestedAt={lastTestedAt}
-            testScheduleDays={testScheduleDays}
-            onTestComplete={(date) => {
-              setLastTestedAt(date)
-              toast.success('Đã hoàn tất tự kiểm tra định kỳ 5 giây!')
-            }}
-          />
-        )}
-
-        {/* MODAL ĐẶT LỊCH KIỂM TRA ĐỊNH KỲ CHO NGƯỜI THUÊ TRỌ */}
-        <InspectionBookingModal
-          isOpen={isInspectionOpen}
-          onClose={() => setIsInspectionOpen(false)}
-          backendUrl={backendUrl}
-          token={token}
-          deviceId={selectedDeviceId}
-          roomName={currentDeviceName}
-          currentUser={currentUser}
-        />
-
-        <footer className="max-w-7xl mx-auto px-4 md:px-8 mt-12 text-center text-[10px] md:text-xs text-slate-400 font-semibold">
-          <p>© 2026 Hệ thống giám sát rò rỉ khí Gas IoT. Thiết kế đồng bộ bởi thương hiệu SAFE FLAME.</p>
-        </footer>
+          <footer className="max-w-7xl mx-auto px-4 md:px-8 mt-12 text-center text-[10px] md:text-xs text-slate-400 font-semibold">
+            <p>© 2026 Hệ thống giám sát rò rỉ khí Gas IoT. Thiết kế đồng bộ bởi thương hiệu SAFE FLAME.</p>
+          </footer>
+        </div>
       </div>
-    </div>
     </>
   )
 }
