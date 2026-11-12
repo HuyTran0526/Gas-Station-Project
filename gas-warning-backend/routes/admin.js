@@ -56,9 +56,6 @@ router.get('/overview', async (req, res) => {
         orderIndex: d.orderIndex || 0,
         kitchenCorner: d.kitchenCorner || 'left',
         inviteCode: d.inviteCode || ('SF-' + d.deviceId.slice(-3)),
-        lastTestedAt: d.lastTestedAt || null,
-        testScheduleDays: d.testScheduleDays || 30,
-        testStatus: d.testStatus || 'idle',
         updatedAt: d.updatedAt,
         tenants: assignedTenants.map(t => ({
           id: t._id,

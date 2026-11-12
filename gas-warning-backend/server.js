@@ -412,9 +412,6 @@ app.get('/api/status', auth, async (req, res) => {
       isEspOnline: isEspOnline,
       floor: state.floor || 1,
       inviteCode: state.inviteCode || ('SF-' + state.deviceId.slice(-3)),
-      lastTestedAt: state.lastTestedAt || null,
-      testScheduleDays: state.testScheduleDays || 30,
-      testStatus: state.testStatus || 'idle',
       recentLogs: recentLogs,
       // Trả thêm thông tin phòng mới nhất của user để frontend tự động đồng bộ ngay lập tức
       userAssignedDeviceId: req.user?.assignedDeviceId || 'DEFAULT_DEV',
@@ -800,99 +797,7 @@ app.post('/api/incidents/simulate', auth, async (req, res) => {
   }
 });
 
-// ==========================================
-// TÍNH NĂNG MỚI: TỰ KIỂM TRA ĐỊNH KỲ (SELF-TEST)
-// ==========================================
-// @route POST /api/device/self-test
-// @desc Chạy quy trình kiểm tra van, quạt, còi trong 5 giây
-app.post('/api/device/self-test', auth, async (req, res) => {
-  try {
-    const targetDevId = (req.body.deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
-    const dev = await DeviceState.findOne({ deviceId: targetDevId });
-    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
 
-    // Kiểm tra trạng thái kết nối mạng của mạch ESP32
-    const now = Date.now();
-    const isOnline = dev.updatedAt ? (now - new Date(dev.updatedAt).getTime()) < 15000 : false;
-
-    dev.lastTestedAt = new Date();
-    dev.testStatus = 'passed';
-    await dev.save();
-
-    console.log(`🩺 [${targetDevId}] Ghi nhận hoàn thành kiểm tra an toàn định kỳ - Online: ${isOnline}`);
-
-    res.status(200).json({
-      status: 'success',
-      isOnline,
-      message: 'Đã ghi nhận hoàn tất kiểm tra an toàn & bảo dưỡng thiết bị thành công!',
-      lastTestedAt: dev.lastTestedAt,
-      testStatus: dev.testStatus
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
-  }
-});
-
-// @route PUT /api/device/test-schedule
-// @desc Đặt chu kỳ kiểm tra định kỳ (15, 30, 60 ngày)
-app.put('/api/device/test-schedule', auth, async (req, res) => {
-  try {
-    const { deviceId, days } = req.body;
-    const targetDevId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
-    const scheduleDays = Number(days) || 30;
-
-    const dev = await DeviceState.findOneAndUpdate(
-      { deviceId: targetDevId },
-      { testScheduleDays: scheduleDays },
-      { new: true }
-    );
-    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
-
-    res.status(200).json({
-      status: 'success',
-      message: `Đã cập nhật chu kỳ kiểm định: Mỗi ${scheduleDays} ngày`,
-      testScheduleDays: dev.testScheduleDays
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
-  }
-});
-
-// @route POST /api/device/simulate-reminder
-// @desc Giả lập tình huống nhắc nhở (quá hạn, đến hạn) để test/demo ngay lập tức
-app.post('/api/device/simulate-reminder', auth, async (req, res) => {
-  try {
-    const { deviceId, type } = req.body;
-    const targetDevId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
-    const dev = await DeviceState.findOne({ deviceId: targetDevId });
-    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
-
-    const schedule = dev.testScheduleDays || 15;
-    let newLastTestedAt = new Date();
-
-    if (type === 'overdue') {
-      newLastTestedAt = new Date(Date.now() - (schedule + 5) * 24 * 60 * 60 * 1000);
-    } else if (type === 'due_today') {
-      newLastTestedAt = new Date(Date.now() - schedule * 24 * 60 * 60 * 1000);
-    } else {
-      newLastTestedAt = new Date();
-    }
-
-    dev.lastTestedAt = newLastTestedAt;
-    await dev.save();
-
-    console.log(`🧪 [${targetDevId}] Kích hoạt chế độ demo nhắc nhở: ${type}`);
-
-    res.status(200).json({
-      status: 'success',
-      message: `Đã kích hoạt trạng thái demo: ${type === 'overdue' ? 'Quá hạn 5 ngày' : type === 'due_today' ? 'Đến hạn hôm nay' : 'An toàn'}`,
-      lastTestedAt: dev.lastTestedAt,
-      testScheduleDays: dev.testScheduleDays
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
-  }
-});
 
 // ==========================================
 // TÍNH NĂNG MỚI: CHIA SẺ PHÒNG CHO BẠN CÙNG PHÒNG

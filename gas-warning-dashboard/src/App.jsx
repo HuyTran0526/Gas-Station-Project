@@ -51,7 +51,6 @@ import Register from './components/Register'
 import SoundSettingsModal from './components/SoundSettingsModal'
 import AdminDashboard from './components/AdminDashboard'
 import LandingPage from './components/LandingPage'
-import SelfTestModal from './components/SelfTestModal'
 import InspectionBookingModal from './components/InspectionBookingModal'
 import alarmService from './services/alarmService'
 import { initFCM } from './services/fcmService'
@@ -123,10 +122,7 @@ function App() {
   const [isAdminView, setIsAdminView] = useState(false)
 
   // Modals Tính Năng Mới
-  const [isSelfTestOpen, setIsSelfTestOpen] = useState(false)
   const [isInspectionOpen, setIsInspectionOpen] = useState(false)
-  const [lastTestedAt, setLastTestedAt] = useState(null)
-  const [testScheduleDays, setTestScheduleDays] = useState(30)
   const [roomInviteCode, setRoomInviteCode] = useState('')
 
   const [ppm, setPpm] = useState(350)
@@ -387,8 +383,6 @@ function App() {
           if (data.deviceName) {
             setCurrentDeviceName(data.deviceName)
           }
-          if (data.lastTestedAt) setLastTestedAt(data.lastTestedAt)
-          if (data.testScheduleDays) setTestScheduleDays(data.testScheduleDays)
           if (data.inviteCode) setRoomInviteCode(data.inviteCode)
 
           // Tự động đồng bộ ngay lập tức khi Chủ Trọ vừa gán hoặc đổi phòng cho người thuê
@@ -1021,21 +1015,6 @@ function App() {
                   </span>
                 </div>
 
-                {/* Các nút Tính Năng Nhanh trên Header (Chỉ dành cho Quản lý / Chủ trọ) */}
-                {currentUser?.role === 'landlord' && (
-                  <div className="hidden lg:flex items-center gap-1.5 border-l border-slate-200 pl-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsSelfTestOpen(true)}
-                      className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-                      title="Lịch nhắc nhở kiểm tra an toàn & bảo dưỡng gas định kỳ"
-                    >
-                      <Calendar className="w-3.5 h-3.5 text-orange-600" />
-                      <span>Nhắc Nhở Định Kỳ</span>
-                    </button>
-                  </div>
-                )}
-
                 {/* Nút đăng xuất */}
                 <button
                   onClick={handleLogout}
@@ -1606,44 +1585,7 @@ function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   {currentUser?.role === 'landlord' ? (
                     <>
-                      {/* Card 1: Nhắc Nhở Bảo Dưỡng An Toàn Gas Định Kỳ (Chủ trọ) */}
-                      <div
-                        onClick={() => setIsSelfTestOpen(true)}
-                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                              <Calendar className="w-6 h-6" />
-                            </div>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
-                              !lastTestedAt
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : (new Date() > new Date(new Date(lastTestedAt).getTime() + (testScheduleDays || 30) * 24 * 60 * 60 * 1000))
-                                ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              {!lastTestedAt
-                                ? 'Cần kiểm tra'
-                                : (new Date() > new Date(new Date(lastTestedAt).getTime() + (testScheduleDays || 30) * 24 * 60 * 60 * 1000))
-                                ? 'Quá hạn kiểm tra ⚠️'
-                                : 'Trong chu kỳ an toàn'}
-                            </span>
-                          </div>
-                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
-                            Nhắc Nhở Bảo Dưỡng Gas Định Kỳ
-                          </h4>
-                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                            Cấu hình chu kỳ tự động nhắc nhở (15, 30, 60 ngày) và xác nhận lịch kiểm tra bình gas, van khóa, còi hú phòng trọ.
-                          </p>
-                        </div>
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
-                          <span>Xem Lịch Nhắc Nhở</span>
-                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                        </div>
-                      </div>
-
-                      {/* Card 2: Đặt Lịch Kiểm Tra & Bảo Trì PCCC (Chủ trọ) */}
+                      {/* Card 1: Đặt Lịch Kiểm Tra & Bảo Trì PCCC (Chủ trọ) */}
                       <div
                         onClick={() => setIsInspectionOpen(true)}
                         className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
@@ -1666,6 +1608,33 @@ function App() {
                         </div>
                         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
                           <span>Đặt Lịch Kiểm Tra</span>
+                          <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Quản Lý Dãy Trọ & Cư Dân (Chủ trọ) */}
+                      <div
+                        onClick={() => setIsAdminView(true)}
+                        className="glass-card p-5 rounded-3xl border border-orange-200/60 hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                              <Users className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                              Quản Lý Toàn Khu
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                            Quản Lý Phòng & Cư Dân
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Xem tổng quan tất cả các phòng trọ, danh sách người thuê, quản lý thiết bị và theo dõi an toàn toàn dãy.
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-orange-600">
+                          <span>Mở Bảng Quản Lý</span>
                           <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
                         </div>
                       </div>
@@ -1883,27 +1852,6 @@ function App() {
 
           {isSoundModalOpen && (
             <SoundSettingsModal onClose={() => setIsSoundModalOpen(false)} />
-          )}
-
-          {/* MODAL NHẮC NHỞ KIỂM TRA & BẢO DƯỠNG GAS ĐỊNH KỲ (Chủ Trọ / Quản lý) */}
-          {currentUser?.role === 'landlord' && (
-            <SelfTestModal
-              isOpen={isSelfTestOpen}
-              onClose={() => setIsSelfTestOpen(false)}
-              backendUrl={backendUrl}
-              token={token}
-              deviceId={selectedDeviceId}
-              roomName={currentDeviceName}
-              isOnline={isOnline}
-              lastTestedAt={lastTestedAt}
-              testScheduleDays={testScheduleDays}
-              onTestComplete={(date) => {
-                setLastTestedAt(date)
-              }}
-              onScheduleChange={(days) => {
-                setTestScheduleDays(days)
-              }}
-            />
           )}
 
           {/* MODAL ĐẶT LỊCH KIỂM TRA ĐỊNH KỲ CHO NGƯỜI THUÊ TRỌ */}
