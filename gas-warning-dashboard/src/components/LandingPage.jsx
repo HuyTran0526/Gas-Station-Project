@@ -1216,7 +1216,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                       </p>
                     </div>
                     <div className="mt-3 pt-2 border-t border-stone-800/80">
-                      <span className="text-xs font-bold text-orange-400 font-mono">450.000đ</span>
+                      <span className="text-xs font-bold text-orange-400 font-mono">499.000đ</span>
                       <span className="text-[10px] text-stone-500"> /phòng</span>
                     </div>
                   </div>
@@ -1255,7 +1255,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                     <div>
                       <h4 className="font-extrabold text-xs sm:text-sm text-white mb-1">Gói Tòa Nhà</h4>
                       <p className="text-[11px] text-stone-400 leading-snug">
-                        Full Gói Pro + <b>Sơ đồ 2D Mặt bằng</b> + Tự test định kỳ 5s + Bảo hành 2 năm
+                        Full Gói Pro + <b>Nhắc nhở kiểm tra định kỳ</b> + Bảo hành 2 năm tận nơi
                       </p>
                     </div>
                     <div className="mt-3 pt-2 border-t border-stone-800/80">
@@ -1310,7 +1310,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                 <div className="flex justify-between items-center">
                   <span className="text-stone-400">Thiết bị phần cứng ({calcRooms} phòng):</span>
                   <span className="font-mono font-bold text-white">
-                    {(calcRooms * (calcPackage === 'basic' ? 450000 : calcPackage === 'pro' ? 750000 : 950000)).toLocaleString('vi-VN')} đ
+                    {(calcRooms * (calcPackage === 'basic' ? 499000 : calcPackage === 'pro' ? 750000 : 950000)).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
 
@@ -1327,7 +1327,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                     Ưu đãi đồ án FPT Capstone (-20%):
                   </span>
                   <span className="font-mono">
-                    -{Math.round(((calcRooms * (calcPackage === 'basic' ? 450000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.20).toLocaleString('vi-VN')} đ
+                    -{Math.round(((calcRooms * (calcPackage === 'basic' ? 499000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.20).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
 
@@ -1338,7 +1338,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   </div>
                   <div className="text-right">
                     <span className="text-2xl sm:text-3xl font-black text-orange-400 font-mono tracking-tight">
-                      {Math.round(((calcRooms * (calcPackage === 'basic' ? 450000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80).toLocaleString('vi-VN')}
+                      {Math.round(((calcRooms * (calcPackage === 'basic' ? 499000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80).toLocaleString('vi-VN')}
                     </span>
                     <span className="text-sm font-bold text-orange-400 ml-1">VNĐ</span>
                   </div>
@@ -1352,7 +1352,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                   Hiệu quả phòng hộ kinh tế:
                 </span>
                 <p className="text-[11px] text-stone-400 leading-relaxed">
-                  Đầu tư chỉ khoảng <b>{Math.round((((calcRooms * (calcPackage === 'basic' ? 450000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80) / calcRooms).toLocaleString('vi-VN')}đ /phòng</b> để bảo vệ toàn bộ tài sản nhà trọ trị giá hàng trăm triệu đồng trước thảm họa cháy nổ.
+                  Đầu tư chỉ khoảng <b>{Math.round((((calcRooms * (calcPackage === 'basic' ? 499000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80) / calcRooms).toLocaleString('vi-VN')}đ /phòng</b> để bảo vệ toàn bộ tài sản nhà trọ trị giá hàng trăm triệu đồng trước thảm họa cháy nổ.
                 </p>
               </div>
 
@@ -1897,7 +1897,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister, onGoToDemo, b
                         address: preOrderForm.address,
                         roomsCount: calcRooms,
                         packageType: calcPackage,
-                        estimatedCost: Math.round(((calcRooms * (calcPackage === 'basic' ? 450000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80),
+                        estimatedCost: Math.round(((calcRooms * (calcPackage === 'basic' ? 499000 : calcPackage === 'pro' ? 750000 : 950000)) + (calcIncludeInstall ? calcRooms * 100000 : 0)) * 0.80),
                         note: preOrderForm.note
                       })
                     })

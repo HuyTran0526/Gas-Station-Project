@@ -811,28 +811,20 @@ app.post('/api/device/self-test', auth, async (req, res) => {
     const dev = await DeviceState.findOne({ deviceId: targetDevId });
     if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
 
-    // Kiểm tra xem mạch phần cứng ESP32 có online thực tế không (nhận tin trong 15s gần nhất)
+    // Kiểm tra trạng thái kết nối mạng của mạch ESP32
     const now = Date.now();
     const isOnline = dev.updatedAt ? (now - new Date(dev.updatedAt).getTime()) < 15000 : false;
-
-    if (!isOnline) {
-      return res.status(400).json({
-        status: 'offline',
-        isOnline: false,
-        message: 'Thiết bị đang Ngoại Tuyến (Offline)! Vi điều khiển ESP32 chưa cấp nguồn hoặc mất kết nối mạng. Không thể gửi xung kiểm định phần cứng thực tế.'
-      });
-    }
 
     dev.lastTestedAt = new Date();
     dev.testStatus = 'passed';
     await dev.save();
 
-    console.log(`🩺 [${targetDevId}] Tự kiểm tra 5s (Phần cứng Thật) - Trạng thái: passed`);
+    console.log(`🩺 [${targetDevId}] Ghi nhận hoàn thành kiểm tra an toàn định kỳ - Online: ${isOnline}`);
 
     res.status(200).json({
       status: 'success',
-      isOnline: true,
-      message: 'Đã hoàn tất quy trình tự kiểm tra phần cứng 5 giây: Van, Quạt, Còi hoạt động 100%!',
+      isOnline,
+      message: 'Đã ghi nhận hoàn tất kiểm tra an toàn & bảo dưỡng thiết bị thành công!',
       lastTestedAt: dev.lastTestedAt,
       testStatus: dev.testStatus
     });

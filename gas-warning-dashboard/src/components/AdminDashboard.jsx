@@ -42,13 +42,9 @@ import {
   Layers,
   Send
 } from 'lucide-react'
-import FloorPlanModal from './FloorPlanModal'
-import IncidentBlackboxModal from './IncidentBlackboxModal'
 
 export default function AdminDashboard({ currentUser, token, backendUrl, onSwitchToMonitor, onRefreshDevices }) {
   const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'tenants' | 'orders' | 'traffic'
-  const [isFloorPlanOpen, setIsFloorPlanOpen] = useState(false)
-  const [isBlackboxOpen, setIsBlackboxOpen] = useState(false)
   const [orders, setOrders] = useState([])
   const [isOrdersLoading, setIsOrdersLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -569,25 +565,6 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
           >
             <BarChart2 className="w-4 h-4" />
             <span>Chiến Dịch ({analytics.totalClicks})</span>
-          </button>
-        </div>
-
-        {/* Global Action Buttons: Sơ đồ mặt bằng 2D & Hộp Đen Sự Cố */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setIsFloorPlanOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
-          >
-            <Layers className="w-4 h-4 text-orange-600" />
-            <span>Sơ Đồ Mặt Bằng 2D</span>
-          </button>
-
-          <button
-            onClick={() => setIsBlackboxOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
-          >
-            <FileText className="w-4 h-4 text-orange-400" />
-            <span>Hộp Đen Sự Cố PCCC</span>
           </button>
         </div>
 
@@ -1234,30 +1211,6 @@ export default function AdminDashboard({ currentUser, token, backendUrl, onSwitc
           </div>
         </div>
       )}
-
-      {/* MODAL SƠ ĐỒ MẶT BẰNG 2D */}
-      <FloorPlanModal
-        isOpen={isFloorPlanOpen}
-        onClose={() => setIsFloorPlanOpen(false)}
-        devices={devices}
-        currentDeviceId=""
-        userRole="landlord"
-        backendUrl={backendUrl}
-        token={token}
-        onRefreshDevices={fetchOverviewData}
-        onSelectDevice={(id) => {
-          const dev = devices.find(d => d.deviceId === id)
-          if (onSwitchToMonitor) onSwitchToMonitor(id, dev?.deviceName || id)
-        }}
-      />
-
-      {/* MODAL HỘP ĐEN SỰ CỐ PCCC */}
-      <IncidentBlackboxModal
-        isOpen={isBlackboxOpen}
-        onClose={() => setIsBlackboxOpen(false)}
-        backendUrl={backendUrl}
-        token={token}
-      />
 
       {/* MODAL THÊM / SỬA PHÒNG */}
       {isDeviceModalOpen && typeof document !== 'undefined' && createPortal(
