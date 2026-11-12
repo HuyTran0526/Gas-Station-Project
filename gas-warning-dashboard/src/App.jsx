@@ -67,6 +67,10 @@ if (typeof window !== 'undefined' && window.localStorage) {
 
 function App() {
   const backendUrl = (() => {
+    // Nếu chạy trên Capacitor mobile app (Android / iOS) thì LUÔN dùng Cloud Render
+    if (typeof window !== 'undefined' && (window.Capacitor?.isNativePlatform?.() || window.location?.protocol === 'capacitor:')) {
+      return CLOUD_BACKEND_URL;
+    }
     if (import.meta.env.VITE_BACKEND_URL) {
       return import.meta.env.VITE_BACKEND_URL;
     }
