@@ -15,7 +15,8 @@ import {
   Wifi,
   WifiOff,
   BellRing,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -126,6 +127,39 @@ export default function SelfTestModal({
       toast.error('Lỗi kết nối máy chủ. Vui lòng thử lại sau.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Giả lập trạng thái để test/demo tức thì (Quá hạn, Đến hạn hôm nay, An toàn)
+  const [isSimulating, setIsSimulating] = useState(false)
+  const handleSimulate = async (type) => {
+    setIsSimulating(true)
+    try {
+      const res = await fetch(`${backendUrl}/device/simulate-reminder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          deviceId: deviceId || 'DEFAULT_DEV',
+          type
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(data.message || 'Đã áp dụng trạng thái mô phỏng!')
+        if (onTestComplete) {
+          onTestComplete(data.lastTestedAt)
+        }
+      } else {
+        toast.error(data.message || 'Lỗi mô phỏng trạng thái')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Lỗi kết nối máy chủ')
+    } finally {
+      setIsSimulating(false)
     }
   }
 
@@ -384,6 +418,57 @@ export default function SelfTestModal({
               <span>Lần kiểm tra trước: {lastDate ? lastDate.toLocaleDateString('vi-VN') : 'Chưa có'}</span>
               <span>Đợt tiếp theo: {nextTestDate ? nextTestDate.toLocaleDateString('vi-VN') : 'Sau ' + scheduleDays + ' ngày'}</span>
             </div>
+          </div>
+
+          {/* Khu Vực Thử Nghiệm Tức Thì (Dành cho Demo & Báo Cáo Không Cần Chờ) */}
+          <div className="p-4 rounded-3xl bg-slate-100/90 border border-slate-200/90 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-orange-600" />
+                Thử Nghiệm Cảnh Báo Ngay (Không Cần Chờ):
+              </span>
+              <span className="text-[10px] text-orange-600 font-extrabold uppercase bg-orange-150/60 px-2 py-0.5 rounded-md">
+                Chế độ Test Demo
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleSimulate('overdue')}
+                disabled={isSimulating}
+                className="py-2.5 px-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Giả lập trạng thái quá hạn kiểm tra 5 ngày để xem cảnh báo đỏ"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>Thử Quá Hạn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSimulate('due_today')}
+                disabled={isSimulating}
+                className="py-2.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Giả lập trạng thái đến hạn hôm nay để xem cảnh báo vàng"
+              >
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span>Thử Đến Hạn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSimulate('safe')}
+                disabled={isSimulating}
+                className="py-2.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Reset về trạng thái vừa kiểm tra xong (an toàn)"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Thử An Toàn</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500 italic">
+              💡 Bấm nút để chuyển đổi tức thì giữa các trạng thái cảnh báo và xem giao diện phản ứng mà không cần phải chờ hết chu kỳ ngày.
+            </p>
           </div>
 
         </div>

@@ -858,6 +858,42 @@ app.put('/api/device/test-schedule', auth, async (req, res) => {
   }
 });
 
+// @route POST /api/device/simulate-reminder
+// @desc Giả lập tình huống nhắc nhở (quá hạn, đến hạn) để test/demo ngay lập tức
+app.post('/api/device/simulate-reminder', auth, async (req, res) => {
+  try {
+    const { deviceId, type } = req.body;
+    const targetDevId = (deviceId || req.user?.assignedDeviceId || 'DEFAULT_DEV').trim().toUpperCase();
+    const dev = await DeviceState.findOne({ deviceId: targetDevId });
+    if (!dev) return res.status(404).json({ message: 'Không tìm thấy thiết bị' });
+
+    const schedule = dev.testScheduleDays || 15;
+    let newLastTestedAt = new Date();
+
+    if (type === 'overdue') {
+      newLastTestedAt = new Date(Date.now() - (schedule + 5) * 24 * 60 * 60 * 1000);
+    } else if (type === 'due_today') {
+      newLastTestedAt = new Date(Date.now() - schedule * 24 * 60 * 60 * 1000);
+    } else {
+      newLastTestedAt = new Date();
+    }
+
+    dev.lastTestedAt = newLastTestedAt;
+    await dev.save();
+
+    console.log(`🧪 [${targetDevId}] Kích hoạt chế độ demo nhắc nhở: ${type}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: `Đã kích hoạt trạng thái demo: ${type === 'overdue' ? 'Quá hạn 5 ngày' : type === 'due_today' ? 'Đến hạn hôm nay' : 'An toàn'}`,
+      lastTestedAt: dev.lastTestedAt,
+      testScheduleDays: dev.testScheduleDays
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi máy chủ: ' + err.message });
+  }
+});
+
 // ==========================================
 // TÍNH NĂNG MỚI: CHIA SẺ PHÒNG CHO BẠN CÙNG PHÒNG
 // ==========================================
