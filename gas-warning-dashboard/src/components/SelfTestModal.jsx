@@ -29,7 +29,8 @@ export default function SelfTestModal({
   isOnline = false,
   lastTestedAt,
   testScheduleDays = 30,
-  onTestComplete
+  onTestComplete,
+  onScheduleChange
 }) {
   const [scheduleDays, setScheduleDays] = useState(testScheduleDays || 30)
   const [isSavingSchedule, setIsSavingSchedule] = useState(false)
@@ -56,11 +57,16 @@ export default function SelfTestModal({
 
   let daysRemaining = null
   let isOverdue = false
+  let isDueToday = false
 
   if (nextTestDate) {
     const diffTime = nextTestDate.getTime() - today.getTime()
     daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    isOverdue = daysRemaining <= 0
+    if (daysRemaining < 0) {
+      isOverdue = true
+    } else if (daysRemaining === 0) {
+      isDueToday = true
+    }
   }
 
   // Lưu chu kỳ nhắc nhở (15, 30, 60, 90 ngày)
@@ -81,6 +87,7 @@ export default function SelfTestModal({
       })
       if (res.ok) {
         toast.success(`Đã cập nhật chu kỳ nhắc nhở: Mỗi ${days} ngày!`)
+        if (onScheduleChange) onScheduleChange(days)
       }
     } catch (err) {
       console.warn('Lỗi cập nhật chu kỳ nhắc nhở:', err)
@@ -188,6 +195,8 @@ export default function SelfTestModal({
               ? 'bg-amber-50/80 border-amber-200 text-amber-950'
               : isOverdue
               ? 'bg-rose-50/90 border-rose-200 text-rose-950'
+              : isDueToday
+              ? 'bg-amber-50/90 border-amber-300 text-amber-950'
               : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
           }`}>
             <div className="flex items-start gap-3">
@@ -196,12 +205,16 @@ export default function SelfTestModal({
                   ? 'bg-amber-100 text-amber-700'
                   : isOverdue
                   ? 'bg-rose-100 text-rose-700'
+                  : isDueToday
+                  ? 'bg-amber-100 text-amber-700'
                   : 'bg-emerald-100 text-emerald-700'
               }`}>
                 {!lastDate ? (
                   <Clock className="w-5 h-5" />
                 ) : isOverdue ? (
                   <AlertTriangle className="w-5 h-5 animate-bounce" />
+                ) : isDueToday ? (
+                  <Clock className="w-5 h-5" />
                 ) : (
                   <ShieldCheck className="w-5 h-5" />
                 )}
@@ -212,6 +225,8 @@ export default function SelfTestModal({
                   <h4 className="font-black text-sm sm:text-base">
                     {!lastDate
                       ? 'Chưa Có Lịch Kiểm Tra'
+                      : isDueToday
+                      ? '🟡 ĐẾN HẠN KIỂM TRA HÔM NAY!'
                       : isOverdue
                       ? `⚠️ ĐÃ QUÁ HẠN KIỂM TRA ${Math.abs(daysRemaining)} NGÀY!`
                       : `🟢 ĐANG TRONG CHU KỲ AN TOÀN (CÒN ${daysRemaining} NGÀY)`}
@@ -226,8 +241,10 @@ export default function SelfTestModal({
                 <p className="text-xs leading-relaxed opacity-90">
                   {!lastDate
                     ? 'Phòng này chưa từng được ghi nhận đợt kiểm tra an toàn nào. Hãy thực hiện kiểm tra thực tế và bấm nút xác nhận bên dưới để kích hoạt chu kỳ theo dõi.'
+                    : isDueToday
+                    ? `Hôm nay là ngày đến hạn kiểm tra an toàn định kỳ theo chu kỳ ${scheduleDays} ngày. Vui lòng kiểm tra bình gas và thử van khóa theo checklist bên dưới.`
                     : isOverdue
-                    ? `Đã quá ${scheduleDays} ngày kể từ lần kiểm tra gần nhất (${lastDate.toLocaleDateString('vi-VN')}). Vui lòng tiến hành kiểm tra van gas và các cơ cấu ngay lập tức để đảm bảo phòng chống cháy nổ.`
+                    ? `Đã quá ${Math.abs(daysRemaining)} ngày kể từ lần kiểm tra gần nhất (${lastDate.toLocaleDateString('vi-VN')}). Vui lòng tiến hành kiểm tra van gas và các cơ cấu ngay lập tức để đảm bảo phòng chống cháy nổ.`
                     : `Lần kiểm tra gần nhất vào ngày ${lastDate.toLocaleDateString('vi-VN')}. Hệ thống sẽ tiếp tục theo dõi và nhắc nhở khi đến ngày ${nextTestDate.toLocaleDateString('vi-VN')}.`}
                 </p>
               </div>

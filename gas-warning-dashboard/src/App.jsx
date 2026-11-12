@@ -1616,8 +1616,18 @@ function App() {
                             <div className="p-3 rounded-2xl bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
                               <Calendar className="w-6 h-6" />
                             </div>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${lastTestedAt ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                              {lastTestedAt ? 'Đang theo dõi chu kỳ' : 'Cần kiểm tra'}
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                              !lastTestedAt
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : (new Date() > new Date(new Date(lastTestedAt).getTime() + (testScheduleDays || 30) * 24 * 60 * 60 * 1000))
+                                ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              {!lastTestedAt
+                                ? 'Cần kiểm tra'
+                                : (new Date() > new Date(new Date(lastTestedAt).getTime() + (testScheduleDays || 30) * 24 * 60 * 60 * 1000))
+                                ? 'Quá hạn kiểm tra ⚠️'
+                                : 'Trong chu kỳ an toàn'}
                             </span>
                           </div>
                           <h4 className="font-extrabold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
@@ -1875,7 +1885,7 @@ function App() {
             <SoundSettingsModal onClose={() => setIsSoundModalOpen(false)} />
           )}
 
-          {/* MODAL TỰ KIỂM TRA ĐỊNH KỲ 5S (Chỉ dành cho Chủ Trọ / Kỹ thuật viên) */}
+          {/* MODAL NHẮC NHỞ KIỂM TRA & BẢO DƯỠNG GAS ĐỊNH KỲ (Chủ Trọ / Quản lý) */}
           {currentUser?.role === 'landlord' && (
             <SelfTestModal
               isOpen={isSelfTestOpen}
@@ -1889,7 +1899,9 @@ function App() {
               testScheduleDays={testScheduleDays}
               onTestComplete={(date) => {
                 setLastTestedAt(date)
-                toast.success('Đã hoàn tất tự kiểm tra định kỳ 5 giây!')
+              }}
+              onScheduleChange={(days) => {
+                setTestScheduleDays(days)
               }}
             />
           )}
